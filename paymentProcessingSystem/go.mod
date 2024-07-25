@@ -1,0 +1,3 @@
+module github.com/RYANCOAL9999/SpinnrTechnologyInterview/paymentProcessingSystem
+
+go 1.21

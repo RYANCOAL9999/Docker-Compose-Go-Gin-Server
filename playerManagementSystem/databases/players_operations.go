@@ -2,7 +2,6 @@ package databases
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/playerManagementSystem/models"
@@ -18,7 +17,7 @@ func GetPlayersData(db *sql.DB) ([]models.PlayerRank, error) {
 		ORDER BY p.id
 	`)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error querying database with GetPlayersData: %w", err)
 	}
 	defer rows.Close()
 
@@ -26,7 +25,7 @@ func GetPlayersData(db *sql.DB) ([]models.PlayerRank, error) {
 	for rows.Next() {
 		var playerRank models.PlayerRank
 		if err := rows.Scan(&playerRank.ID, &playerRank.Name, &playerRank.Rank); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error scanning row with GetPlayersData: %w", err)
 		}
 		playerRanks = append(playerRanks, playerRank)
 	}
@@ -41,7 +40,7 @@ func AddPlayer(db *sql.DB, name string, rank int) (*int64, error) {
 		WHERE name = ?
 	`, name, rank)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error querying database with AddPlayer: %w", err)
 	}
 
 	id, _ := result.LastInsertId()
@@ -59,9 +58,9 @@ func GetPlayer(db *sql.DB, id int) (*models.PlayerRank, error) {
 		WHERE id = ?
 	`, id).Scan(&playerRank.ID, &playerRank.Name, &playerRank.Rank)
 	if err == sql.ErrNoRows {
-		return nil, err
+		return nil, fmt.Errorf("error querying database with GetPlayer: %w", err)
 	} else if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error scanning row with GetPlayer: %w", err)
 	}
 	return &playerRank, err
 }
@@ -74,7 +73,7 @@ func UpdatePlayer(db *sql.DB, playerRank models.PlayerRank) error {
 		var levelID int
 		err := db.QueryRow("SELECT id FROM level WHERE rank = ?", playerRank.Rank).Scan(&levelID)
 		if err != nil {
-			return err
+			return fmt.Errorf("error querying database with UpdatePlayer: %w", err)
 		}
 		query += " level_id = ?"
 		args = append(args, levelID)
@@ -89,7 +88,7 @@ func UpdatePlayer(db *sql.DB, playerRank models.PlayerRank) error {
 	}
 
 	if len(args) == 0 {
-		return fmt.Errorf("no fields to update")
+		return fmt.Errorf("no fields update for player with id: %d", playerRank.ID)
 	}
 
 	query += " WHERE id = ?"
@@ -98,15 +97,15 @@ func UpdatePlayer(db *sql.DB, playerRank models.PlayerRank) error {
 	// Execute the update query
 	result, err := db.Exec(query, args...)
 	if err != nil {
-		return err
+		return fmt.Errorf("error updating player: %w", err)
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return err
+		return fmt.Errorf("error getting rows affected: %w", err)
 	}
 	if rowsAffected == 0 {
-		return errors.New("no rows were updated")
+		return fmt.Errorf("no rows were updated, player with id %d may not exist", playerRank.ID)
 	}
 
 	return nil
@@ -115,12 +114,12 @@ func UpdatePlayer(db *sql.DB, playerRank models.PlayerRank) error {
 func DeletePlayer(db *sql.DB, id int) error {
 	result, err := db.Exec("DELETE FROM players WHERE id = ?", id)
 	if err != nil {
-		return err
+		return fmt.Errorf("error querying database with DeletePlayer: %w", err)
 	}
 
 	rowsAffected, _ := result.RowsAffected()
 	if rowsAffected == 0 {
-		return errors.New("room not found")
+		return fmt.Errorf("no rows were deleted, player with id %d may not exist", id)
 	}
 	return nil
 }

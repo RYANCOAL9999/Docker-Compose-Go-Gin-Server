@@ -2,6 +2,7 @@ package databases
 
 import (
 	"database/sql"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -50,7 +51,7 @@ func ListReservation(db *sql.DB, roomID int, startDate, endDate time.Time, limit
 
 	rows, err := db.Query(query, args...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error querying database with ListReservation: %w", err)
 	}
 	defer rows.Close()
 
@@ -65,21 +66,18 @@ func ListReservation(db *sql.DB, roomID int, startDate, endDate time.Time, limit
 			&playerIDsStr,
 		)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error scanning row with ListReservation: %w", err)
 		}
 
 		playerIDs := aizuArray(playerIDsStr)
 
-		r.Player, err = searchPlayerInRoom(db, playerIDs)
-		if err != nil {
-			return nil, err
-		}
+		r.Player, _ = searchPlayerInRoom(db, playerIDs)
 
 		reservations = append(reservations, r)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error iterating over rows with ListReservation: %w", err)
 	}
 
 	return reservations, nil
@@ -89,7 +87,7 @@ func ListReservation(db *sql.DB, roomID int, startDate, endDate time.Time, limit
 func InsertReservation(db *sql.DB, roomID int, date time.Time) (*int64, error) {
 	result, err := db.Exec("INSERT INTO reservations (room_id, date) VALUES (?, ?)", roomID, date)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error querying database with InsertReservation: %w", err)
 	}
 	id, _ := result.LastInsertId()
 	return &id, err

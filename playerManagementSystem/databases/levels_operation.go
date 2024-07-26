@@ -24,11 +24,11 @@ func GetLevelsData(db *sql.DB) ([]models.Level, error) {
 	return levels, nil
 }
 
-func AddLevel(db *sql.DB, name string, rank int) (*int64, error) {
+func AddLevel(db *sql.DB, name string, rank int) (int, error) {
 	result, err := db.Exec("INSERT INTO levels (name, rank) VALUES (?)", name, rank)
 	if err != nil {
-		return nil, fmt.Errorf("error querying database with AddLevel: %w", err)
+		return 0, fmt.Errorf("error querying database with AddLevel: %w", err)
 	}
 	id, _ := result.LastInsertId()
-	return &id, nil
+	return int(id), nil
 }

@@ -6,12 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupChallengeRoutes(players *gin.RouterGroup, db *sql.DB) {
-	// Player routes
-	players.GET("/results", func(c *gin.Context) {
-		// GetPlayers(c, db)
-	})
-	players.POST("/", func(c *gin.Context) {
-		// CreatePlayer(c, db)
-	})
+func SetupChallengeRoutes(challenges *gin.RouterGroup, db *sql.DB) {
+	challenges.POST("/", func(c *gin.Context) { JoinChallenges(c, db) })
+	challenges.GET("/results", func(c *gin.Context) { ShowChallenges(c, db) })
 }

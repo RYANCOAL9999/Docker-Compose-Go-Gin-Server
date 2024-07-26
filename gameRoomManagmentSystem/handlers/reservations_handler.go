@@ -29,7 +29,6 @@ func GetReservations(c *gin.Context, db *sql.DB) {
 	} else {
 		args = reservations
 	}
-
 	c.JSON(http.StatusOK, args)
 }
 

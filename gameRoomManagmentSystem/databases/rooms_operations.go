@@ -39,13 +39,13 @@ func ShowRoom(db *sql.DB, id int) (*models.Room, error) {
 	return &room, nil
 }
 
-func AddRoom(db *sql.DB, name string, description string) (*int64, error) {
+func AddRoom(db *sql.DB, name string, description string) (int, error) {
 	result, err := db.Exec("INSERT INTO room (name, status, description) VALUES (?, ?)", name, models.StatusAvailable, description)
 	if err != nil {
-		return nil, fmt.Errorf("error querying database with AddRoom: %w", err)
+		return 0, fmt.Errorf("error querying database with AddRoom: %w", err)
 	}
 	id, _ := result.LastInsertId()
-	return &id, err
+	return int(id), err
 }
 
 func UpdateRoomData(db *sql.DB, room models.Room) error {

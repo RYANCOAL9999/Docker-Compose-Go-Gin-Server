@@ -6,6 +6,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type RouterFunctionHeader struct {
+	context *gin.Context
+	db      *sql.DB
+}
+
+func NewRouterFunctionHeader(c *gin.Context, db *sql.DB) *RouterFunctionHeader {
+	return &RouterFunctionHeader{
+		context: c,
+		db:      db,
+	}
+}
+
 func SetupPlayersRoutes(players *gin.RouterGroup, db *sql.DB) {
 	// Player routes
 	players.GET("/", func(c *gin.Context) { GetPlayers(c, db) })

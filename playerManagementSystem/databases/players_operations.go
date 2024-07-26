@@ -32,7 +32,7 @@ func GetPlayersData(db *sql.DB) ([]models.PlayerRank, error) {
 	return playerRanks, nil
 }
 
-func AddPlayer(db *sql.DB, name string, rank int) (*int64, error) {
+func AddPlayer(db *sql.DB, name string, rank int) (int, error) {
 	result, err := db.Exec(`
 		INSERT INTO players (name, level_id) 
 		SELECT ?, id 
@@ -40,11 +40,11 @@ func AddPlayer(db *sql.DB, name string, rank int) (*int64, error) {
 		WHERE name = ?
 	`, name, rank)
 	if err != nil {
-		return nil, fmt.Errorf("error querying database with AddPlayer: %w", err)
+		return 0, fmt.Errorf("error querying database with AddPlayer: %w", err)
 	}
 
 	id, _ := result.LastInsertId()
-	return &id, nil
+	return int(id), nil
 }
 
 func GetPlayer(db *sql.DB, id int) (*models.PlayerRank, error) {

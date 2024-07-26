@@ -84,12 +84,12 @@ func ListReservation(db *sql.DB, roomID int, startDate, endDate time.Time, limit
 }
 
 // insertReservation function
-func InsertReservation(db *sql.DB, roomID int, date time.Time) (*int64, error) {
+func InsertReservation(db *sql.DB, roomID int, date time.Time) (int, error) {
 	result, err := db.Exec("INSERT INTO reservations (room_id, date) VALUES (?, ?)", roomID, date)
 	if err != nil {
-		return nil, fmt.Errorf("error querying database with InsertReservation: %w", err)
+		return 0, fmt.Errorf("error querying database with InsertReservation: %w", err)
 	}
 	id, _ := result.LastInsertId()
-	return &id, err
+	return int(id), err
 
 }

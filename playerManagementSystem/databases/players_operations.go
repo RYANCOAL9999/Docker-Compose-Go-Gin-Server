@@ -3,6 +3,7 @@ package databases
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 
 	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/playerManagementSystem/models"
 )
@@ -66,49 +67,48 @@ func GetPlayer(db *sql.DB, id int) (*models.PlayerRank, error) {
 }
 
 func UpdatePlayer(db *sql.DB, playerRank models.PlayerRank) error {
-	var id int = playerRank.ID
-	var rankNUll bool = playerRank.Rank == 0
-	var query string
-	var itemID int
-	var playerRankScanID int
-	var _ sql.Result
-
-	if !rankNUll {
-		query = `SELECT id FROM level WHERE rank = ?`
-		itemID = playerRank.Rank
-
-	} else {
-		query = `SELECT id FROM player WHERE id = ?`
-		itemID = id
-	}
-
-	err := db.QueryRow(query, itemID).Scan(&playerRankScanID)
-	if err == sql.ErrNoRows {
-		return err
-	} else if err != nil {
-		return err
-	}
-
-	query = `UPDATE players SET`
+	query := "UPDATE players SET"
 	args := []interface{}{}
 
-	if !rankNUll {
-		query += " level = ?"
-		args = append(args, playerRankScanID)
+	if playerRank.Rank != 0 {
+		var levelID int
+		err := db.QueryRow("SELECT id FROM level WHERE rank = ?", playerRank.Rank).Scan(&levelID)
+		if err != nil {
+			return err
+		}
+		query += " level_id = ?"
+		args = append(args, levelID)
 	}
 
 	if playerRank.Name != "" {
+		if len(args) > 0 {
+			query += ","
+		}
 		query += " name = ?"
 		args = append(args, playerRank.Name)
 	}
 
-	args = append(args, id)
+	if len(args) == 0 {
+		return fmt.Errorf("no fields to update")
+	}
 
-	_, err = db.Exec(query, args...)
+	query += " WHERE id = ?"
+	args = append(args, playerRank.ID)
 
+	// Execute the update query
+	result, err := db.Exec(query, args...)
 	if err != nil {
 		return err
 	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return errors.New("no rows were updated")
+	}
+
 	return nil
 }
 
@@ -120,8 +120,7 @@ func DeletePlayer(db *sql.DB, id int) error {
 
 	rowsAffected, _ := result.RowsAffected()
 	if rowsAffected == 0 {
-		err = errors.New("room not found")
-		return err
+		return errors.New("room not found")
 	}
 	return nil
 }

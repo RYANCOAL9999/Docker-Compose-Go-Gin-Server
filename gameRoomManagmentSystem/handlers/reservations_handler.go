@@ -15,11 +15,11 @@ const time_format string = "2006-01-02 00:00:00"
 
 func GetReservations(c *gin.Context, db *sql.DB) {
 	var args interface{}
-	room_id, _ := strconv.Atoi(c.Query("room_id"))
-	start_Date, _ := time.Parse(time_format, c.Query("start_Date"))
-	end_Date, _ := time.Parse(time_format, c.Query("end_Date"))
+	roomID, _ := strconv.Atoi(c.Query("room_id"))
+	startDate, _ := time.Parse(time_format, c.Query("start_Date"))
+	endDate, _ := time.Parse(time_format, c.Query("end_Date"))
 	limit, _ := strconv.Atoi(c.Query("limit"))
-	reservations, err := databases.ListReservation(db, &room_id, &start_Date, &end_Date, &limit)
+	reservations, err := databases.ListReservation(db, roomID, startDate, endDate, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -33,8 +33,11 @@ func GetReservations(c *gin.Context, db *sql.DB) {
 	c.JSON(http.StatusOK, args)
 }
 
-func updateReservationRoom(db *sql.DB, room_id int, player_ids string) error {
-	err := databases.UpdateRoomData(db, room_id, nil, nil, nil, &player_ids)
+func updateReservationRoom(db *sql.DB, roomID int, playerIDs string) error {
+	var room models.Room
+	room.ID = roomID
+	room.PlayerIDs = playerIDs
+	err := databases.UpdateRoomData(db, room)
 	if err != nil {
 		return err
 	}
@@ -42,7 +45,7 @@ func updateReservationRoom(db *sql.DB, room_id int, player_ids string) error {
 }
 
 func CreateReservations(c *gin.Context, db *sql.DB) {
-	var reservation models.ReservationCreate
+	var reservation models.Reservation
 	if err := c.ShouldBindJSON(&reservation); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -59,16 +62,16 @@ func CreateReservations(c *gin.Context, db *sql.DB) {
 		return
 	}
 
-	id, err := databases.InsertReservation(db, &reservation.RoomID, &reservation.Date)
+	id, err := databases.InsertReservation(db, reservation.RoomID, reservation.Date)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	var player_ids string = c.Param("player_ids")
+	var playerIDs string = c.Param("player_ids")
 
-	err = updateReservationRoom(db, reservation.ID, player_ids)
+	err = updateReservationRoom(db, reservation.ID, playerIDs)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

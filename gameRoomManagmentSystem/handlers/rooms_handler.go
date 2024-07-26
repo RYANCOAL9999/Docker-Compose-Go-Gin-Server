@@ -51,8 +51,7 @@ func UpdateRoom(c *gin.Context, db *sql.DB) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	err := databases.UpdateRoomData(db, room.ID, &room.Name, (*int)(&room.Status), &room.Description, &room.Player_ids)
+	err := databases.UpdateRoomData(db, room)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err})

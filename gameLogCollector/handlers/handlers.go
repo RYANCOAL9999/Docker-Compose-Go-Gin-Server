@@ -6,8 +6,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupLogsRoutes(Logs *gin.RouterGroup, db *sql.DB) {
+func SetupLogsRoutes(logs *gin.RouterGroup, db *sql.DB) {
 	// Player routes
-	Logs.POST("/", func(c *gin.Context) {})
-	Logs.GET("/results", func(c *gin.Context) {})
+	logs.POST("/", func(c *gin.Context) { CreateLog(c, db) })
+	logs.GET("/", func(c *gin.Context) { getLogs(c, db) })
 }

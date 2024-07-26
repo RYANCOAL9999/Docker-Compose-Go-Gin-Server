@@ -13,17 +13,17 @@ const (
 
 // table for Prize Pool
 type PrizePool struct {
-	Amount float64 `json:"amount"`
+	Amount float64 `json:"amount" binding:"required"`
 }
 
 // table for Challenge
 type Challenge struct {
 	ID        int       `json:"id"`
-	PlayerID  string    `json:"player_id"`
-	Amount    float64   `json:"amount"`
-	Status    Status    `json:"status"`
-	Won       bool      `json:"won"`
-	CreatedAt time.Time `json:"created_at"`
+	PlayerID  string    `json:"player_id" binding:"required"`
+	Amount    float64   `json:"amount" binding:"required"`
+	Status    Status    `json:"status" binding:"required"`
+	Won       bool      `json:"won" binding:"required"`
+	CreatedAt time.Time `json:"created_at" binding:"required"`
 }
 
 // New Challenge Struct for request

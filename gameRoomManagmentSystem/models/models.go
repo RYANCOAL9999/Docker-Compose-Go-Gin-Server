@@ -14,10 +14,10 @@ const (
 // table for Room
 type Room struct {
 	ID          int    `json:"id"`
-	Name        string `json:"name"`
-	Status      Status `json:"status"`
-	Description string `json:"description"`
-	PlayerIDs   string `json:"player_ids"`
+	Name        string `json:"name" binding:"required"`
+	Status      Status `json:"status" binding:"required"`
+	Description string `json:"description" binding:"required"`
+	PlayerIDs   string `json:"player_ids" binding:"required"`
 }
 
 // struct for Completed the ReservationRoom
@@ -30,8 +30,8 @@ type PlayerRank struct {
 // table for Reservation
 type Reservation struct {
 	ID     int       `json:"id"`
-	RoomID int       `json:"room_id"`
-	Date   time.Time `json:"date"`
+	RoomID int       `json:"room_id" binding:"required"`
+	Date   time.Time `json:"date" binding:"required"`
 }
 
 // return struct for Reservation

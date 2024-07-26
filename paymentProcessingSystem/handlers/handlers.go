@@ -6,12 +6,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupPaymentsRoutes(players *gin.RouterGroup, db *sql.DB) {
+func SetupPaymentsRoutes(payments *gin.RouterGroup, db *sql.DB) {
 	// Player routes
-	players.GET("/:id", func(c *gin.Context) {
-		// GetPlayers(c, db)
-	})
-	players.POST("/", func(c *gin.Context) {
-		// CreatePlayer(c, db)
-	})
+	payments.GET("/:id", func(c *gin.Context) { ShowPayment(c, db) })
+	payments.POST("/", func(c *gin.Context) { CreatePayment(c, db) })
 }

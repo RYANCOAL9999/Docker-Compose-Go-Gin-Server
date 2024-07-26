@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/playerManagementSystem/handlers"
+	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/gameRoomManagmentSystem/handlers"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
@@ -35,11 +35,11 @@ func main() {
 	//Recovery returns a middleware if server is panics
 	r.Use(gin.Recovery())
 
-	// Setup Levels routes
-	handlers.SetupLevelsRoutes(r.Group("/levels"), db)
+	// Setup Rooms routes
+	handlers.SetupRoomsRoutes(r.Group("/rooms"), db)
 
-	// Setup Players routes
-	handlers.SetupPlayersRoutes(r.Group("/players"), db)
+	// Setup Reservations routes
+	handlers.SetupReservationsRoutes(r.Group("/reservations"), db)
 
 	fmt.Println("Starting Go API service...")
 

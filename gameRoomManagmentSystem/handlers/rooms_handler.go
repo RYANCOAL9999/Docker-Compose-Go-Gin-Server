@@ -5,29 +5,29 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/playerManagementSystem/databases"
-	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/playerManagementSystem/models"
+	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/gameRoomManagmentSystem/databases"
+	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/gameRoomManagmentSystem/models"
 
 	"github.com/gin-gonic/gin"
 )
 
-func GetPlayers(c *gin.Context, db *sql.DB) {
-	playerRanks, err := databases.GetPlayersData(db)
+func GetRooms(c *gin.Context, db *sql.DB) {
+	rooms, err := databases.ListRooms(db)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, playerRanks)
+	c.JSON(http.StatusOK, rooms)
 }
 
-func CreatePlayer(c *gin.Context, db *sql.DB) {
-	var newPlayerRank models.PlayerRank
-	if err := c.BindJSON(&newPlayerRank); err != nil {
+func CreateRoom(c *gin.Context, db *sql.DB) {
+	var room models.Room
+	if err := c.BindJSON(&room); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	id, err := databases.AddPlayer(db, newPlayerRank.Name, newPlayerRank.Rank)
+	id, err := databases.AddRoom(db, room.Name, room.Description)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -35,40 +35,41 @@ func CreatePlayer(c *gin.Context, db *sql.DB) {
 	c.JSON(http.StatusCreated, gin.H{"id": id})
 }
 
-func GetPlayer(c *gin.Context, db *sql.DB) {
+func GetRoom(c *gin.Context, db *sql.DB) {
 	id, _ := strconv.Atoi(c.Param("id"))
-	playerRank, err := databases.GetPlayer(db, id)
+	room, err := databases.ShowRoom(db, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, playerRank)
+	c.JSON(http.StatusOK, room)
 }
 
-func UpdatePlayer(c *gin.Context, db *sql.DB) {
-	var playerRank models.PlayerRank
-	if err := c.BindJSON(&playerRank); err != nil {
+func UpdateRoom(c *gin.Context, db *sql.DB) {
+	var room models.Room
+	if err := c.BindJSON(&room); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	err := databases.UpdatePlayer(db, playerRank)
+	err := databases.UpdateRoomData(db, room.ID, &room.Name, (*int)(&room.Status), &room.Description, &room.Player_ids)
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
 	}
-
 	var args interface{}
 	c.JSON(http.StatusOK, args)
 }
 
-func DeletePlayer(c *gin.Context, db *sql.DB) {
+func DeleteRoom(c *gin.Context, db *sql.DB) {
 	id, _ := strconv.Atoi(c.Param("id"))
-	err := databases.DeletePlayer(db, id)
+	err := databases.DeleteRoom(db, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
 		return
 	}
+
 	var args interface{}
 	c.JSON(http.StatusOK, args)
 }

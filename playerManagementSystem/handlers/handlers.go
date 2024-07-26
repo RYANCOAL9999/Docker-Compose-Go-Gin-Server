@@ -13,11 +13,10 @@ func SetupPlayersRoutes(players *gin.RouterGroup, db *sql.DB) {
 	players.GET("/:id", func(c *gin.Context) { GetPlayer(c, db) })
 	players.PUT("/:id", func(c *gin.Context) { UpdatePlayer(c, db) })
 	players.DELETE("/:id", func(c *gin.Context) { DeletePlayer(c, db) })
-
 }
 
-func SetupLevelsRoutes(Levels *gin.RouterGroup, db *sql.DB) {
+func SetupLevelsRoutes(levels *gin.RouterGroup, db *sql.DB) {
 	// Level routes
-	Levels.GET("/", func(c *gin.Context) { GetLevels(c, db) })
-	Levels.POST("/", func(c *gin.Context) { CreateLevel(c, db) })
+	levels.GET("/", func(c *gin.Context) { GetLevels(c, db) })
+	levels.POST("/", func(c *gin.Context) { CreateLevel(c, db) })
 }

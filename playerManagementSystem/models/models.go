@@ -1,12 +1,13 @@
 package models
 
-type Player struct {
-	ID    int    `json:"id"`
-	Name  string `json:"name"`
-	Level int    `json:"level"`
-}
-
 type Level struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`
+	Rank int    `json:"Rank"`
+}
+
+type PlayerRank struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+	Rank int    `json:"rank"`
 }

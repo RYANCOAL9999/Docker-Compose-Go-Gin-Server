@@ -20,7 +20,7 @@ func main() {
 		log.Fatalf("Error loading .env file")
 	}
 	// Database connection
-	db, err := sql.Open("mysql", os.Getenv("DB_CONNECTION_STRING"))
+	db, err := sql.Open("mysql", os.Getenv("DB_CONNECTION_STRING")+"?parseTime=true")
 	if err != nil {
 		log.Fatal(err)
 	}

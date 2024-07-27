@@ -31,5 +31,5 @@ type Challenge struct {
 // New Challenge Struct for request
 type NewChallengeNeed struct {
 	PlayerID int     `json:"player_id" binding:"required"`
-	Amount   float64 `json:"amount" binding:"required,eq=20.01"`
+	Amount   float64 `json:"amount" binding:"required" validate:"eq=20.01"`
 }

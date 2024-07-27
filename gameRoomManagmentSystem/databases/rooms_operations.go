@@ -9,7 +9,11 @@ import (
 )
 
 func ListRooms(db *sql.DB) ([]models.Room, error) {
-	var query string = "SELECT id, name, status FROM rooms"
+	var query string = `
+		SELECT 
+		id, name, status 
+		FROM rooms
+	`
 
 	rows, err := db.Query(query)
 	if err != nil {
@@ -20,7 +24,12 @@ func ListRooms(db *sql.DB) ([]models.Room, error) {
 	var rooms []models.Room
 	for rows.Next() {
 		var room models.Room
-		if err := rows.Scan(&room.ID, &room.Name, &room.Status); err != nil {
+		err := rows.Scan(
+			&room.ID,
+			&room.Name,
+			&room.Status,
+		)
+		if err != nil {
 			return nil, fmt.Errorf("error scanning row with ListRooms: %w", err)
 		}
 		rooms = append(rooms, room)
@@ -30,7 +39,16 @@ func ListRooms(db *sql.DB) ([]models.Room, error) {
 
 func ShowRoom(db *sql.DB, id int) (*models.Room, error) {
 	var room models.Room
-	err := db.QueryRow("SELECT id, name, status FROM players WHERE id = ?", id).Scan(&room.ID, &room.Name, &room.Status)
+	err := db.QueryRow(`
+		SELECT 
+		id, name, status 
+		FROM players 
+		WHERE id = ?
+	`, id).Scan(
+		&room.ID,
+		&room.Name,
+		&room.Status,
+	)
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("error querying database with Show Room: %w", err)
 	} else if err != nil {
@@ -40,7 +58,10 @@ func ShowRoom(db *sql.DB, id int) (*models.Room, error) {
 }
 
 func AddRoom(db *sql.DB, name string, description string) (int, error) {
-	result, err := db.Exec("INSERT INTO room (name, status, description) VALUES (?, ?)", name, models.StatusAvailable, description)
+	result, err := db.Exec(`
+		INSERT INTO room (name, status, description) 
+		VALUES (?, ?, ?)
+	`, name, models.StatusAvailable, description)
 	if err != nil {
 		return 0, fmt.Errorf("error querying database with AddRoom: %w", err)
 	}
@@ -98,7 +119,10 @@ func UpdateRoomData(db *sql.DB, room models.Room) error {
 }
 
 func DeleteRoom(db *sql.DB, id int) error {
-	result, err := db.Exec("DELETE FROM players WHERE id = ?", id)
+	result, err := db.Exec(`
+		DELETE FROM players 
+		WHERE id = ?
+	`, id)
 	if err != nil {
 		return fmt.Errorf("error querying database with DeleteRoom: %w", err)
 	}
@@ -120,9 +144,10 @@ func searchPlayerInRoom(db *sql.DB, playerIDs []int) ([]models.PlayerRank, error
 	}
 
 	var query string = fmt.Sprintf(`
-        SELECT p.id, p.name, l.rank 
+        SELECT 
+		p.id, p.name, l.rank 
         FROM players p
-        INNER JOIN level l ON p.level_id = l.id
+        INNER JOIN levels l ON p.level_id = l.id
         WHERE p.id IN (%s)
         ORDER BY p.id
     `, strings.Join(placeholders, ","))
@@ -136,7 +161,12 @@ func searchPlayerInRoom(db *sql.DB, playerIDs []int) ([]models.PlayerRank, error
 	var playerRanks []models.PlayerRank
 	for rows.Next() {
 		var playerRank models.PlayerRank
-		if err := rows.Scan(&playerRank.ID, &playerRank.Name, &playerRank.Rank); err != nil {
+		err := rows.Scan(
+			&playerRank.ID,
+			&playerRank.Name,
+			&playerRank.Rank,
+		)
+		if err != nil {
 			return nil, fmt.Errorf("error scanning row with searchPlayerInRoom: %w", err)
 		}
 		playerRanks = append(playerRanks, playerRank)

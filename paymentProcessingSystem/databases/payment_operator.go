@@ -11,8 +11,16 @@ import (
 func GetPayment(db *sql.DB, id int) (*models.Payment, error) {
 	var payment models.Payment
 	err := db.QueryRow(`
-		SELECT id, method, amount, describle FROM payment WHERE id = ?
-	`, id).Scan(&payment.ID, &payment.Method, &payment.Amount, &payment.Describle)
+		SELECT 
+		id, method, amount, describle 
+		FROM payment 
+		WHERE id = ?
+	`, id).Scan(
+		&payment.ID,
+		&payment.Method,
+		&payment.Amount,
+		&payment.Describle,
+	)
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("error querying database with GetPlayer: %w", err)
 	} else if err != nil {
@@ -23,7 +31,8 @@ func GetPayment(db *sql.DB, id int) (*models.Payment, error) {
 
 func AddPayment(db *sql.DB, payment models.Payment) (int, error) {
 	result, err := db.Exec(`
-		INSERT INTO payment (method, amount, describle, timestamp) VALUES (?, ?, ?, ?)
+		INSERT INTO payment (method, amount, describle, timestamp) 
+		VALUES (?, ?, ?, ?)
 	`, payment.Method, payment.Amount, payment.Describle, time.Now())
 	if err != nil {
 		return 0, fmt.Errorf("error querying database with AddPayment: %w", err)

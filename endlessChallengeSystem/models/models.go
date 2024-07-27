@@ -8,7 +8,7 @@ type Status int
 
 const (
 	Ready Status = iota
-	joined
+	Joined
 )
 
 // table for Prize Pool
@@ -18,12 +18,13 @@ type PrizePool struct {
 
 // table for Challenge
 type Challenge struct {
-	ID        int       `json:"id"`
-	PlayerID  string    `json:"player_id" binding:"required"`
-	Amount    float64   `json:"amount" binding:"required"`
-	Status    Status    `json:"status" binding:"required"`
-	Won       bool      `json:"won" binding:"required"`
-	CreatedAt time.Time `json:"created_at" binding:"required"`
+	ID          int       `json:"id"`
+	PlayerID    string    `json:"player_id" binding:"required"`
+	Amount      float64   `json:"amount" binding:"required"`
+	Status      Status    `json:"status" binding:"required"`
+	Won         bool      `json:"won" binding:"required"`
+	CreatedAt   time.Time `json:"created_at" binding:"required"`
+	Probability float64   `json:"probability" binding:"required"`
 }
 
 // New Challenge Struct for request

@@ -14,16 +14,17 @@ import (
 )
 
 // 1% chance of winning
-const winProbability float32 = 0.01
+const winProbability float64 = 0.01
 
-// time format
-const time_format string = "2006-01-02 00:00:00"
+func CalculateChallengeResult(db *sql.DB, challengeID int, playerID int, probability float64) {
 
-func CalculateChallengeResult(db *sql.DB, playerID int) {
-	// Delay the calculation by 30 seconds
-	time.Sleep(30 * time.Second)
+	var localprobability float64 = probability
 
-	won := rand.Float32() < winProbability
+	if localprobability == 0 {
+		localprobability += rand.Float64()
+	}
+
+	won := localprobability < winProbability
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -32,18 +33,15 @@ func CalculateChallengeResult(db *sql.DB, playerID int) {
 	}
 	defer tx.Rollback()
 
-	err = databases.UpdateChallenge(tx, models.Ready, won, playerID)
-	if err != nil {
-		log.Printf("Failed to update challenge: %v", err)
-		return
+	if won {
+		err = databases.DistributePrizePool(tx, challengeID, playerID)
+	} else {
+		err = databases.Updateprobability(tx, challengeID, playerID, localprobability)
 	}
 
-	if won {
-		err = databases.DistributePrizePool(tx, playerID)
-		if err != nil {
-			log.Printf("Failed to distribute prize pool: %v", err)
-			return
-		}
+	if err != nil {
+		log.Printf("Failed to distribute prize pool: %v", err)
+		return
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -81,7 +79,7 @@ func JoinChallenges(c *gin.Context, db *sql.DB) {
 	}
 	defer tx.Rollback()
 
-	err = databases.AddNewChallenge(tx, newChallengeNeed)
+	lastChallengeID, err := databases.AddNewChallenge(tx, newChallengeNeed)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to Add New Challenge "})
 		return
@@ -99,17 +97,17 @@ func JoinChallenges(c *gin.Context, db *sql.DB) {
 		return
 	}
 
-	go func() {
-		time.Sleep(30 * time.Second)
-		CalculateChallengeResult(db, newChallengeNeed.PlayerID)
-	}()
-
-	challengeStatus, err := databases.GetChallengeStatus(db, newChallengeNeed.PlayerID)
+	challengeStatus, probability, err := databases.GetChallenge(db, lastChallengeID, newChallengeNeed.PlayerID)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	go func() {
+		time.Sleep(30 * time.Second)
+		CalculateChallengeResult(db, lastChallengeID, newChallengeNeed.PlayerID, *probability)
+	}()
 
 	c.JSON(http.StatusCreated, gin.H{"status": challengeStatus})
 }

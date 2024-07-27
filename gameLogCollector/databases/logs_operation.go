@@ -10,7 +10,12 @@ import (
 
 func ListLogs(db *sql.DB, playerID int, action string, startTime time.Time, endTime time.Time, limit int) ([]models.Log, error) {
 
-	query := `SELECT id, player_id, action, timestamp, details FROM game_logs WHERE 1=1`
+	query := `
+		SELECT 
+		id, player_id, action, timestamp, details 
+		FROM game_logs 
+		WHERE 1 = 1
+	`
 	var args []interface{}
 
 	if playerID != 0 {
@@ -43,7 +48,13 @@ func ListLogs(db *sql.DB, playerID int, action string, startTime time.Time, endT
 	var logs []models.Log
 	for rows.Next() {
 		var log models.Log
-		err := rows.Scan(&log.ID, &log.PlayerID, &log.Action, &log.Timestamp, &log.Details)
+		err := rows.Scan(
+			&log.ID,
+			&log.PlayerID,
+			&log.Action,
+			&log.Timestamp,
+			&log.Details,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("error scanning row with with ListLogs: %w", err)
 		}
@@ -54,7 +65,8 @@ func ListLogs(db *sql.DB, playerID int, action string, startTime time.Time, endT
 
 func AddLog(db *sql.DB, log models.Log) (int, error) {
 	result, err := db.Exec(`
-		INSERT INTO game_logs (player_id, action, timestamp, details) VALUES (?, ?, ?, ?)
+		INSERT INTO game_logs (player_id, action, timestamp, details) 
+		VALUES (?, ?, ?, ?)
 	`, log.PlayerID, log.Action, time.Now(), log.Details)
 	if err != nil {
 		return 0, fmt.Errorf("error querying database with AddLog: %w", err)

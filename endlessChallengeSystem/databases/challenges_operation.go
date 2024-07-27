@@ -12,7 +12,7 @@ import (
 func ListChallenges(db *sql.DB, limit int) ([]models.Challenge, error) {
 	var query string = `
 		SELECT 
-		id, player_id, amount, won, created_at 
+		id, player_id, amount, status, won, created_at, probability 
 		FROM challenges
 		ORDER BY id
 	`
@@ -34,7 +34,15 @@ func ListChallenges(db *sql.DB, limit int) ([]models.Challenge, error) {
 	var challenges []models.Challenge
 	for rows.Next() {
 		var challenge models.Challenge
-		err := rows.Scan(&challenge.ID, &challenge.PlayerID, &challenge.Amount, &challenge.Won, &challenge.CreatedAt)
+		err := rows.Scan(
+			&challenge.ID,
+			&challenge.PlayerID,
+			&challenge.Amount,
+			&challenge.Status,
+			&challenge.Won,
+			&challenge.CreatedAt,
+			&challenge.Probability,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("error scanning row with ListChallenges: %w", err)
 		}
@@ -45,40 +53,52 @@ func ListChallenges(db *sql.DB, limit int) ([]models.Challenge, error) {
 
 func GetLastChallengeTime(db *sql.DB, playerIDs int) (*time.Time, error) {
 	var lastChallengeTime time.Time
-	err := db.QueryRow("SELECT created_at FROM challenges WHERE player_id = ? ORDER BY created_at DESC LIMIT 1", playerIDs).Scan(&lastChallengeTime)
+	err := db.QueryRow(`
+		SELECT 
+		created_at 
+		FROM challenges 
+		WHERE player_id = ? 
+		ORDER BY created_at DESC 
+		LIMIT 1
+	`, playerIDs).Scan(&lastChallengeTime)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, fmt.Errorf("error querying database with CreateChallenge: %w", err)
 	}
 	return &lastChallengeTime, nil
 }
 
-func GetChallengeStatus(db *sql.DB, playerID int) (*int, error) {
-	var status int
-	err := db.QueryRow("SELECT status FROM challenges WHERE player_id = ? ", playerID).Scan(&status)
+func GetChallenge(db *sql.DB, challengeID int, playerID int) (*models.Status, *float64, error) {
+	var status models.Status
+	var probability float64
+	err := db.QueryRow(`
+		SELECT 
+		status, probability 
+		FROM challenges 
+		WHERE id = ? AND player_id = ? 
+	`, challengeID, playerID).Scan(&status, &probability)
 	if err != nil && err != sql.ErrNoRows {
-		return nil, fmt.Errorf("error querying database with CreateChallenge: %w", err)
+		return nil, nil, fmt.Errorf("error querying database with CreateChallenge: %w", err)
 	}
-	return &status, nil
+	return &status, &probability, nil
 }
 
-func AddNewChallenge(tx *sql.Tx, newChallengeNeed models.NewChallengeNeed) error {
-	_, err := tx.Exec(`
-		INSERT INTO challenges (player_id, amount, status, won, created_at) 
-		VALUES (?, ?, 1, false, NOW())
-		ON DUPLICATE KEY UPDATE 
-		amount = VALUES(amount),
-		status = VALUES(status),
-		won = VALUES(won),
-		created_at = VALUES(created_at)
+func AddNewChallenge(tx *sql.Tx, newChallengeNeed models.NewChallengeNeed) (int, error) {
+	result, err := tx.Exec(`
+		INSERT INTO challenges (player_id, amount, status, won, created_at, probability) 
+		VALUES (?, ?, 1, false, NOW(), 0)
 	`, newChallengeNeed.PlayerID, newChallengeNeed.Amount)
 	if err != nil {
-		return fmt.Errorf("error querying database with addNewChallenge: %w", err)
+		return 0, fmt.Errorf("error querying database with addNewChallenge: %w", err)
 	}
-	return nil
+	challengeID, _ := result.LastInsertId()
+	return int(challengeID), nil
 }
 
 func UpdatePricePool(tx *sql.Tx, amount float64) error {
-	_, err := tx.Exec("UPDATE prize_pool SET amount = amount + ?", amount)
+	_, err := tx.Exec(`
+		UPDATE prize_pools 
+		SET amount = amount + ?
+	`, amount)
 	if err != nil {
 		return fmt.Errorf("error updating price pool: %w", err)
 	}
@@ -87,7 +107,8 @@ func UpdatePricePool(tx *sql.Tx, amount float64) error {
 
 func UpdateChallenge(tx *sql.Tx, status models.Status, won bool, playerID int) error {
 	_, err := tx.Exec(`
-		UPDATE challenges SET status = ?, won = ? WHERE player_id = ?
+		UPDATE challenges 
+		SET status = ?, won = ? WHERE player_id = ?
 	`, status, won, playerID)
 	if err != nil {
 		return fmt.Errorf("error updating challenge: %w", err)
@@ -95,26 +116,50 @@ func UpdateChallenge(tx *sql.Tx, status models.Status, won bool, playerID int) e
 	return nil
 }
 
-func DistributePrizePool(tx *sql.Tx, playerID int) error {
-
+func DistributePrizePool(tx *sql.Tx, challengeID int, playerID int) error {
+	// know the player last win how much money
 	var prize float64
-	err := tx.QueryRow("SELECT amount FROM prize_pool").Scan(&prize)
+	err := tx.QueryRow(`
+		SELECT 
+		amount 
+		FROM prize_pools
+	`).Scan(&prize)
 	if err != nil {
 		return fmt.Errorf("error fetching prize pool amount: %w", err)
 	}
 
-	// Update challenges's amount
-	_, err = tx.Exec("UPDATE challenges SET amount = amount + ? WHERE player_id = ? AND status = ?", prize, playerID, models.Ready)
+	// Update last challenges's won
+	_, err = tx.Exec(`
+		UPDATE challenges 
+		SET won = 1, probability = 0 
+		WHERE id = ? AND player_id = ?
+	`, challengeID, playerID)
 	if err != nil {
 		return fmt.Errorf("error updating player's balance: %w", err)
 	}
 
 	// Reset prize pool
-	_, err = tx.Exec("UPDATE prize_pool SET amount = 0")
+	_, err = tx.Exec("UPDATE prize_pools SET amount = 0")
 	if err != nil {
 		return fmt.Errorf("error resetting prize pool: %w", err)
 	}
 
-	log.Printf("Prize pool of %f distributed to player %d", prize, playerID)
+	log.Printf("Prize pool of %f distributed to player %d and challenge %d", prize, playerID, challengeID)
+	return nil
+}
+
+func Updateprobability(tx *sql.Tx, challengeID int, playerID int, probability float64) error {
+
+	// Update last challenges's won
+	_, err := tx.Exec(`
+		UPDATE challenges 
+		SET probability = 0 
+		WHERE id = ? AND player_id = ?
+	`, challengeID, playerID)
+	if err != nil {
+		return fmt.Errorf("error updating player's balance: %w", err)
+	}
+
+	log.Printf("probability of %f with player %d and challenge %d", probability, playerID, challengeID)
 	return nil
 }

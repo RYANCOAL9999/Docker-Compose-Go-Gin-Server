@@ -22,13 +22,13 @@ func aizuArray(A string) []int {
 func ListReservation(db *sql.DB, roomID int, startDate, endDate time.Time, limit int) ([]models.ReservationRoom, error) {
 	query := `
         SELECT
-            r.id AS reservation_id,
-            rm.id AS room_id,
-            r.date_time AS reservation_date_time,
-            rm.player_ids AS player_ids
+		r.id AS reservation_id,
+		rm.id AS room_id,
+		r.date_time AS reservation_date_time,
+		rm.player_ids AS player_ids
         FROM reservations r
-        INNER JOIN room rm ON r.room_id = rm.id
-        WHERE 1=1
+        INNER JOIN rooms rm ON r.room_id = rm.id
+        WHERE 1 = 1
     `
 	args := []interface{}{}
 
@@ -85,7 +85,10 @@ func ListReservation(db *sql.DB, roomID int, startDate, endDate time.Time, limit
 
 // insertReservation function
 func InsertReservation(db *sql.DB, roomID int, date time.Time) (int, error) {
-	result, err := db.Exec("INSERT INTO reservations (room_id, date) VALUES (?, ?)", roomID, date)
+	result, err := db.Exec(`
+		INSERT INTO reservations (room_id, date) 
+		VALUES (?, ?)
+	`, roomID, date)
 	if err != nil {
 		return 0, fmt.Errorf("error querying database with InsertReservation: %w", err)
 	}

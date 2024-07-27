@@ -9,10 +9,11 @@ import (
 
 func GetPlayersData(db *sql.DB) ([]models.PlayerRank, error) {
 	rows, err := db.Query(`
-		SELECT p.id, p.name, l.rank 
+		SELECT 
+		p.id, p.name, l.rank 
 		FROM players p
 		INNER JOIN 
-		level l 
+		levels l 
 		ON p.level_id = l.id
 		ORDER BY p.id
 	`)
@@ -24,7 +25,12 @@ func GetPlayersData(db *sql.DB) ([]models.PlayerRank, error) {
 	var playerRanks []models.PlayerRank
 	for rows.Next() {
 		var playerRank models.PlayerRank
-		if err := rows.Scan(&playerRank.ID, &playerRank.Name, &playerRank.Rank); err != nil {
+		err := rows.Scan(
+			&playerRank.ID,
+			&playerRank.Name,
+			&playerRank.Rank,
+		)
+		if err != nil {
 			return nil, fmt.Errorf("error scanning row with GetPlayersData: %w", err)
 		}
 		playerRanks = append(playerRanks, playerRank)
@@ -35,7 +41,8 @@ func GetPlayersData(db *sql.DB) ([]models.PlayerRank, error) {
 func AddPlayer(db *sql.DB, name string, rank int) (int, error) {
 	result, err := db.Exec(`
 		INSERT INTO players (name, level_id) 
-		SELECT ?, id 
+		SELECT 
+		?, id 
 		FROM levels 
 		WHERE name = ?
 	`, name, rank)
@@ -50,10 +57,11 @@ func AddPlayer(db *sql.DB, name string, rank int) (int, error) {
 func GetPlayer(db *sql.DB, id int) (*models.PlayerRank, error) {
 	var playerRank models.PlayerRank
 	err := db.QueryRow(`
-		SELECT p.id, p.name, l.rank 
+		SELECT 
+		p.id, p.name, l.rank 
 		FROM players p
 		INNER JOIN 
-		level l 
+		levels l 
 		ON p.level_id = l.id
 		WHERE id = ?
 	`, id).Scan(&playerRank.ID, &playerRank.Name, &playerRank.Rank)
@@ -71,7 +79,12 @@ func UpdatePlayer(db *sql.DB, playerRank models.PlayerRank) error {
 
 	if playerRank.Rank != 0 {
 		var levelID int
-		err := db.QueryRow("SELECT id FROM level WHERE rank = ?", playerRank.Rank).Scan(&levelID)
+		err := db.QueryRow(`
+			SELECT 
+			id 
+			FROM levels 
+			WHERE rank = ?
+		`, playerRank.Rank).Scan(&levelID)
 		if err != nil {
 			return fmt.Errorf("error querying database with UpdatePlayer: %w", err)
 		}

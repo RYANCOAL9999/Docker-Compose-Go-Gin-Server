@@ -17,3 +17,6 @@ FROM alpine:3.12 as production
 COPY --from=builder /app/gameRoomManagmentSystem /app/gameRoomManagmentSystem
 
 CMD ["/app/gameRoomManagmentSystem"]
+
+# expose port 8083 for REST API server
+EXPOSE 8083

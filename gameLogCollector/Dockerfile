@@ -17,3 +17,6 @@ FROM alpine:3.12 as production
 COPY --from=builder /app/gameLogCollector /app/gameLogCollector
 
 CMD ["/app/gameLogCollector"]
+
+# expose port 8084 for REST API server
+EXPOSE 8084

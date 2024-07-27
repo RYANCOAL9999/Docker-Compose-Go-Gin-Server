@@ -17,3 +17,6 @@ FROM alpine:3.12 as production
 COPY --from=builder /app/playerManagementSystem /app/playerManagementSystem
 
 CMD ["/app/playerManagementSystem"]
+
+# expose port 8081 for REST API server
+EXPOSE 8081

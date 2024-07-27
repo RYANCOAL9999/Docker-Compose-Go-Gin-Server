@@ -57,6 +57,6 @@ func main() {
 	\ \_____\  \ \_____\     \ \_\ \_\  \ \_\    \ \_\ 
 	 \/_____/   \/_____/      \/_/\/_/   \/_/     \/_/ `)
 
-	// Run with 8080 port
-	r.Run(":8080")
+	// Run with port
+	r.Run(os.Getenv("PORT"))
 }

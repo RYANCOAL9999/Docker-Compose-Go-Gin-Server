@@ -17,3 +17,6 @@ FROM alpine:3.12 as production
 COPY --from=builder /app/paymentProcessingSystem /app/paymentProcessingSystem
 
 CMD ["/app/paymentProcessingSystem"]
+
+# expose port 8001 for REST API server
+EXPOSE 8082

@@ -17,3 +17,6 @@ FROM alpine:3.12 as production
 COPY --from=builder /app/endlessChallengeSystem /app/endlessChallengeSystem
 
 CMD ["/app/endlessChallengeSystem"]
+
+# expose port 8085 for REST API server
+EXPOSE 8085

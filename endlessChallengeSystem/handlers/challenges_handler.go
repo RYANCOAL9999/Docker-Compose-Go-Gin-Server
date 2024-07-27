@@ -18,8 +18,9 @@ const winProbability float64 = 0.01
 
 func CalculateChallengeResult(db *sql.DB, challengeID int, playerID int, probability float64) {
 
+	// Delay the calculation by 30 seconds
+	time.Sleep(30 * time.Second)
 	var localprobability float64 = probability
-
 	if localprobability == 0 {
 		localprobability += rand.Float64()
 	}

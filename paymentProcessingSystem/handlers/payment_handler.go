@@ -104,7 +104,7 @@ func MakeBlockchainPayment(payment models.Payment) *models.PaymentResponse {
 }
 
 func ShowPayment(c *gin.Context, db *sql.DB) {
-	id, _ := strconv.Atoi(c.Query("id"))
+	id, _ := strconv.Atoi(c.Param("id"))
 	payment, err := databases.GetPayment(db, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -120,18 +120,18 @@ func CreatePayment(c *gin.Context, db *sql.DB) {
 		return
 	}
 
-	var item *models.PaymentResponse
+	// var item *models.PaymentResponse
 
-	switch method := payment.Method; method {
-	case "CreditCardPayment":
-		item = MakeCreditCardPayment(payment)
-	case "BankTransfer":
-		item = MakeCreditCardPayment(payment)
-	case "ThirdPartyPayment":
-		item = MakeThirdPartyPayment(payment)
-	case "BlockchainPayment":
-		item = MakeBlockchainPayment(payment)
-	}
+	// switch method := payment.Method; method {
+	// case "CreditCardPayment":
+	// 	item = MakeCreditCardPayment(payment)
+	// case "BankTransfer":
+	// 	item = MakeCreditCardPayment(payment)
+	// case "ThirdPartyPayment":
+	// 	item = MakeThirdPartyPayment(payment)
+	// case "BlockchainPayment":
+	// 	item = MakeBlockchainPayment(payment)
+	// }
 
 	paymentID, err := databases.AddPayment(db, payment)
 	if err != nil {
@@ -141,6 +141,7 @@ func CreatePayment(c *gin.Context, db *sql.DB) {
 
 	var result models.PaymentResult
 	result.ID = paymentID
-	result.Status = item.Status
+	result.Status = "Success"
+	// result.Status = item.Status
 	c.JSON(http.StatusCreated, result)
 }

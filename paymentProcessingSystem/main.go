@@ -43,7 +43,7 @@ func main() {
 	r.Use(gin.Recovery())
 
 	// Setup Levels routes
-	handlers.SetupPaymentsRoutes(r.Group("/levels"), db)
+	handlers.SetupPaymentsRoutes(r.Group("/payments"), db)
 
 	fmt.Println("Starting Go API service...")
 

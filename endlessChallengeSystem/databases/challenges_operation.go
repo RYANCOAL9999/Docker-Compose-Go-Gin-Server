@@ -60,7 +60,9 @@ func GetLastChallengeTime(db *sql.DB, playerID int) (*time.Time, error) {
 		WHERE PlayerID = ? 
 		ORDER BY CreatedAt DESC 
 		LIMIT 1
-	`, playerID).Scan(&lastChallengeTime)
+	`, playerID).Scan(
+		&lastChallengeTime,
+	)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, fmt.Errorf("error querying database with CreateChallenge: %w", err)
 	}
@@ -75,7 +77,10 @@ func GetChallenge(db *sql.DB, challengeID int, playerID int) (*models.Status, *f
 		Status, Probability 
 		FROM Challenge 
 		WHERE ID = ? AND PlayerID = ? 
-	`, challengeID, playerID).Scan(&status, &probability)
+	`, challengeID, playerID).Scan(
+		&status,
+		&probability,
+	)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, nil, fmt.Errorf("error querying database with CreateChallenge: %w", err)
 	}
@@ -125,7 +130,9 @@ func DistributePrizePool(tx *sql.Tx, challengeID int, playerID int) error {
 		Amount 
 		FROM PrizePool 
 		WHERE ID = 1
-	`).Scan(&prize)
+	`).Scan(
+		&prize,
+	)
 	if err != nil {
 		return fmt.Errorf("error fetching prize pool amount: %w", err)
 	}

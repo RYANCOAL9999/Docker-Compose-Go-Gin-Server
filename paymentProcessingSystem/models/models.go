@@ -7,8 +7,8 @@ type Describle struct {
 	ExpirationDate string `json:"expiration_date"`
 	Key            string `json:"key"`
 	Currency       string `json:"currency"`
-	Sender         string `json:"sender_account"`
-	Receiver       string `json:"receiver_account"`
+	Sender         string `json:"sender"`
+	Receiver       string `json:"receiver"`
 	Description    string `json:"description"`
 }
 
@@ -18,7 +18,7 @@ type Payment struct {
 	Method    string    `json:"method" binding:"required"`
 	Amount    float64   `json:"amount" binding:"required"`
 	Describle Describle `json:"describle" binding:"required"`
-	Timestamp time.Time `json:"timestamp" binding:"required"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
 type PaymentResult struct {

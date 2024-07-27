@@ -68,7 +68,11 @@ func GetPlayer(db *sql.DB, id int) (*models.PlayerRank, error) {
 		Levels L 
 		ON P.LevelID = L.ID
 		WHERE P.ID = ?
-	`, id).Scan(&playerRank.ID, &playerRank.Name, &playerRank.LV)
+	`, id).Scan(
+		&playerRank.ID,
+		&playerRank.Name,
+		&playerRank.LV,
+	)
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("error querying database with GetPlayer: %w", err)
 	} else if err != nil {
@@ -88,7 +92,9 @@ func UpdatePlayer(db *sql.DB, playerRank models.PlayerRank) error {
 			ID
 			FROM Level 
 			WHERE LV = ?
-		`, playerRank.LV).Scan(&levelID)
+		`, playerRank.LV).Scan(
+			&levelID,
+		)
 		if err != nil {
 			return fmt.Errorf("error querying database with UpdatePlayer: %w", err)
 		}

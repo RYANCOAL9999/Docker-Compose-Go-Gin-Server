@@ -1,8 +1,9 @@
 {
 	"info": {
-		"_postman_id": "d7caf8c7-1bac-4ede-abee-77bc626deb4e",
+		"_postman_id": "fcf44b5b-fdbd-4a9d-948c-90d94f70e13a",
 		"name": "gameLogCollector",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "947814"
 	},
 	"item": [
 		{
@@ -51,20 +52,7 @@
 						}
 					}
 				},
-				"url": {
-					"raw": "http://0.0.0.0:8080/logs",
-					"protocol": "http",
-					"host": [
-						"0",
-						"0",
-						"0",
-						"0"
-					],
-					"port": "8080",
-					"path": [
-						"logs"
-					]
-				}
+				"url": "http://0.0.0.0:8080/logs"
 			},
 			"response": []
 		}

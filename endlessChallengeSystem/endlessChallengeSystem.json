@@ -1,8 +1,9 @@
 {
 	"info": {
-		"_postman_id": "61746366-d9fa-46c6-91fb-50f8ca9c50f3",
+		"_postman_id": "9aede3e7-4600-4db5-a63f-329ee259854f",
 		"name": "endlessChallengeSystem",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "947814"
 	},
 	"item": [
 		{
@@ -10,21 +11,7 @@
 			"request": {
 				"method": "GET",
 				"header": [],
-				"url": {
-					"raw": "http://0.0.0.0:8080/challenges/results",
-					"protocol": "http",
-					"host": [
-						"0",
-						"0",
-						"0",
-						"0"
-					],
-					"port": "8080",
-					"path": [
-						"challenges",
-						"results"
-					]
-				}
+				"url": "http://0.0.0.0:8080/challenges/results"
 			},
 			"response": []
 		},
@@ -42,20 +29,7 @@
 						}
 					}
 				},
-				"url": {
-					"raw": "http://0.0.0.0:8080/challenges",
-					"protocol": "http",
-					"host": [
-						"0",
-						"0",
-						"0",
-						"0"
-					],
-					"port": "8080",
-					"path": [
-						"challenges"
-					]
-				}
+				"url": "http://0.0.0.0:8080/challenges"
 			},
 			"response": []
 		}

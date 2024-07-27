@@ -1,8 +1,9 @@
 {
 	"info": {
-		"_postman_id": "e3a2954c-87a9-4fd1-ae6c-f0d648175ce8",
+		"_postman_id": "76edfa3e-9d7b-4d45-a7f2-5f4360ab61a9",
 		"name": "gameRoomManagmentSystem",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "947814"
 	},
 	"item": [
 		{
@@ -19,21 +20,7 @@
 						}
 					}
 				},
-				"url": {
-					"raw": "http://0.0.0.0:8080/rooms/1",
-					"protocol": "http",
-					"host": [
-						"0",
-						"0",
-						"0",
-						"0"
-					],
-					"port": "8080",
-					"path": [
-						"rooms",
-						"1"
-					]
-				}
+				"url": "http://0.0.0.0:8080/rooms/1"
 			},
 			"response": []
 		},
@@ -51,21 +38,7 @@
 						}
 					}
 				},
-				"url": {
-					"raw": "http://0.0.0.0:8080/rooms/1",
-					"protocol": "http",
-					"host": [
-						"0",
-						"0",
-						"0",
-						"0"
-					],
-					"port": "8080",
-					"path": [
-						"rooms",
-						"1"
-					]
-				}
+				"url": "http://0.0.0.0:8080/rooms/1"
 			},
 			"response": []
 		},
@@ -74,20 +47,7 @@
 			"request": {
 				"method": "GET",
 				"header": [],
-				"url": {
-					"raw": "http://0.0.0.0:8080/rooms",
-					"protocol": "http",
-					"host": [
-						"0",
-						"0",
-						"0",
-						"0"
-					],
-					"port": "8080",
-					"path": [
-						"rooms"
-					]
-				}
+				"url": "http://0.0.0.0:8080/rooms"
 			},
 			"response": []
 		},
@@ -96,21 +56,7 @@
 			"request": {
 				"method": "GET",
 				"header": [],
-				"url": {
-					"raw": "http://0.0.0.0:8080/rooms/1",
-					"protocol": "http",
-					"host": [
-						"0",
-						"0",
-						"0",
-						"0"
-					],
-					"port": "8080",
-					"path": [
-						"rooms",
-						"1"
-					]
-				}
+				"url": "http://0.0.0.0:8080/rooms/1"
 			},
 			"response": []
 		},
@@ -119,21 +65,7 @@
 			"request": {
 				"method": "DELETE",
 				"header": [],
-				"url": {
-					"raw": "http://0.0.0.0:8080/rooms/1",
-					"protocol": "http",
-					"host": [
-						"0",
-						"0",
-						"0",
-						"0"
-					],
-					"port": "8080",
-					"path": [
-						"rooms",
-						"1"
-					]
-				}
+				"url": "http://0.0.0.0:8080/rooms/1"
 			},
 			"response": []
 		},
@@ -142,20 +74,7 @@
 			"request": {
 				"method": "GET",
 				"header": [],
-				"url": {
-					"raw": "http://0.0.0.0:8080/reservations",
-					"protocol": "http",
-					"host": [
-						"0",
-						"0",
-						"0",
-						"0"
-					],
-					"port": "8080",
-					"path": [
-						"reservations"
-					]
-				}
+				"url": "http://0.0.0.0:8080/reservations"
 			},
 			"response": []
 		},
@@ -173,20 +92,7 @@
 						}
 					}
 				},
-				"url": {
-					"raw": "http://0.0.0.0:8080/reservations",
-					"protocol": "http",
-					"host": [
-						"0",
-						"0",
-						"0",
-						"0"
-					],
-					"port": "8080",
-					"path": [
-						"reservations"
-					]
-				}
+				"url": "http://0.0.0.0:8080/reservations"
 			},
 			"response": []
 		}

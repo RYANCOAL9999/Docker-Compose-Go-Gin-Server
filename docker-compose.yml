@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf :/etc/nginx/nginx.conf:ro
+    depends_on:
+      - server1
+      - server2
+      - server3
+      - server4
+      - server5
+    networks:
+      - app-network
+  
+  mysql:
+    image: mysql:5.7
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: SpinnrTechnology
+      MYSQL_USER: Spinnr
+      MYSQL_PASSWORD: 123456
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    env_file:
+      - ./.env
+    networks:
+      - app-network
+
+  server1:
+    build:
+      context: ./playerManagementSystem
+      dockerfile: Dockerfile
+    container_name: playerManagementSystem
+    depends_on:
+      - mysql
+    networks:
+      - app-network
+
+  server2:
+    build:
+      context: ./paymentProcessingSystem
+      dockerfile: Dockerfile
+    container_name: paymentProcessingSystem
+    depends_on:
+      - mysql
+    networks:
+      - app-network
+
+  server3:
+    build:
+      context: ./gameRoomManagmentSystem
+      dockerfile: Dockerfile
+    container_name: gameRoomManagmentSystem
+    depends_on:
+      - mysql
+    networks:
+      - app-network
+
+  server4:
+    build:
+      context: ./gameLogCollector
+      dockerfile: Dockerfile
+    container_name: gameLogCollector
+    depends_on:
+      - mysql
+    networks:
+      - app-network
+
+  server5:
+    build:
+      context: ./endlessChallengeSystem
+      dockerfile: Dockerfile
+    container_name: endlessChallengeSystem
+    depends_on:
+      - mysql
+    networks:
+      - app-network
+
+volumes:
+  mysql-data:
+
+networks:
+  app-network:
+    driver: bridge

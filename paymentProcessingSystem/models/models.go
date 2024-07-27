@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type Describle struct {
 	CardNumber     string `json:"card_number"`
 	ExpirationDate string `json:"expiration_date"`
@@ -16,6 +18,7 @@ type Payment struct {
 	Method    string    `json:"method" binding:"required"`
 	Amount    float64   `json:"amount" binding:"required"`
 	Describle Describle `json:"describle" binding:"required"`
+	Timestamp time.Time `json:"timestamp" binding:"required"`
 }
 
 type PaymentResult struct {

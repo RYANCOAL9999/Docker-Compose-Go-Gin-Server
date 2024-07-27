@@ -13,6 +13,7 @@ const (
 
 // table for Prize Pool
 type PrizePool struct {
+	ID     int     `json:"id"`
 	Amount float64 `json:"amount" binding:"required"`
 }
 

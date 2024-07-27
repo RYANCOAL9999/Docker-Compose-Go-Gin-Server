@@ -61,16 +61,20 @@ func CreateReservations(c *gin.Context, db *sql.DB) {
 		return
 	}
 
-	id, err := databases.InsertReservation(db, reservation.RoomID, reservation.Date)
+	time, err := time.Parse(time_format, reservation.Date)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "date format has issues"})
+		return
+	}
+
+	id, err := databases.InsertReservation(db, reservation.RoomID, time)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	var playerIDs string = c.Param("player_ids")
-
-	err = updateReservationRoom(db, reservation.ID, playerIDs)
+	err = updateReservationRoom(db, reservation.RoomID, reservation.PlayerIDs)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

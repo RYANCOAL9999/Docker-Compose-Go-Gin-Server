@@ -10,12 +10,14 @@ import (
 func GetPlayersData(db *sql.DB) ([]models.PlayerRank, error) {
 	rows, err := db.Query(`
 		SELECT 
-		p.id, p.name, l.rank 
-		FROM players p
+		P.ID as ID, 
+		P.Name as Name,
+		L.LV as LV
+		FROM Player P
 		INNER JOIN 
-		levels l 
-		ON p.level_id = l.id
-		ORDER BY p.id
+		Level L 
+		ON P.LevelID = L.ID
+		ORDER BY ID
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("error querying database with GetPlayersData: %w", err)
@@ -28,7 +30,7 @@ func GetPlayersData(db *sql.DB) ([]models.PlayerRank, error) {
 		err := rows.Scan(
 			&playerRank.ID,
 			&playerRank.Name,
-			&playerRank.Rank,
+			&playerRank.LV,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("error scanning row with GetPlayersData: %w", err)
@@ -38,14 +40,14 @@ func GetPlayersData(db *sql.DB) ([]models.PlayerRank, error) {
 	return playerRanks, nil
 }
 
-func AddPlayer(db *sql.DB, name string, rank int) (int, error) {
+func AddPlayer(db *sql.DB, name string, lv int) (int, error) {
 	result, err := db.Exec(`
-		INSERT INTO players (name, level_id) 
+		INSERT INTO Player (Name, LevelID) 
 		SELECT 
-		?, id 
-		FROM levels 
-		WHERE name = ?
-	`, name, rank)
+		?, ID 
+		FROM Level 
+		WHERE LV = ?
+	`, name, lv)
 	if err != nil {
 		return 0, fmt.Errorf("error querying database with AddPlayer: %w", err)
 	}
@@ -58,13 +60,15 @@ func GetPlayer(db *sql.DB, id int) (*models.PlayerRank, error) {
 	var playerRank models.PlayerRank
 	err := db.QueryRow(`
 		SELECT 
-		p.id, p.name, l.rank 
-		FROM players p
+		P.ID as ID, 
+		P.Name as Name,
+		L.LV as LV
+		FROM Player P
 		INNER JOIN 
-		levels l 
-		ON p.level_id = l.id
-		WHERE id = ?
-	`, id).Scan(&playerRank.ID, &playerRank.Name, &playerRank.Rank)
+		Levels L 
+		ON P.LevelID = L.ID
+		WHERE P.ID = ?
+	`, id).Scan(&playerRank.ID, &playerRank.Name, &playerRank.LV)
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("error querying database with GetPlayer: %w", err)
 	} else if err != nil {
@@ -77,18 +81,18 @@ func UpdatePlayer(db *sql.DB, playerRank models.PlayerRank) error {
 	query := "UPDATE players SET"
 	args := []interface{}{}
 
-	if playerRank.Rank != 0 {
+	if playerRank.LV != 0 {
 		var levelID int
 		err := db.QueryRow(`
 			SELECT 
-			id 
-			FROM levels 
-			WHERE rank = ?
-		`, playerRank.Rank).Scan(&levelID)
+			ID
+			FROM Level 
+			WHERE LV = ?
+		`, playerRank.LV).Scan(&levelID)
 		if err != nil {
 			return fmt.Errorf("error querying database with UpdatePlayer: %w", err)
 		}
-		query += " level_id = ?"
+		query += " LevelID = ?"
 		args = append(args, levelID)
 	}
 
@@ -96,7 +100,7 @@ func UpdatePlayer(db *sql.DB, playerRank models.PlayerRank) error {
 		if len(args) > 0 {
 			query += ","
 		}
-		query += " name = ?"
+		query += " Name = ?"
 		args = append(args, playerRank.Name)
 	}
 
@@ -104,7 +108,7 @@ func UpdatePlayer(db *sql.DB, playerRank models.PlayerRank) error {
 		return fmt.Errorf("no fields update for player with id: %d", playerRank.ID)
 	}
 
-	query += " WHERE id = ?"
+	query += " WHERE ID = ?"
 	args = append(args, playerRank.ID)
 
 	// Execute the update query
@@ -125,7 +129,10 @@ func UpdatePlayer(db *sql.DB, playerRank models.PlayerRank) error {
 }
 
 func DeletePlayer(db *sql.DB, id int) error {
-	result, err := db.Exec("DELETE FROM players WHERE id = ?", id)
+	result, err := db.Exec(`
+		DELETE FROM players 
+		WHERE ID = ?
+	`, id)
 	if err != nil {
 		return fmt.Errorf("error querying database with DeletePlayer: %w", err)
 	}

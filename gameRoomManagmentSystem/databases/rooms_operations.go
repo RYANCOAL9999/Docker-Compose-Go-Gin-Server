@@ -11,10 +11,9 @@ import (
 func ListRooms(db *sql.DB) ([]models.Room, error) {
 	var query string = `
 		SELECT 
-		id, name, status 
-		FROM rooms
+		ID, Name, Status 
+		FROM Room
 	`
-
 	rows, err := db.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("error querying database with ListRooms: %w", err)
@@ -41,9 +40,9 @@ func ShowRoom(db *sql.DB, id int) (*models.Room, error) {
 	var room models.Room
 	err := db.QueryRow(`
 		SELECT 
-		id, name, status 
-		FROM players 
-		WHERE id = ?
+		ID, Name, Status
+		FROM Room 
+		WHERE ID = ?
 	`, id).Scan(
 		&room.ID,
 		&room.Name,
@@ -59,9 +58,9 @@ func ShowRoom(db *sql.DB, id int) (*models.Room, error) {
 
 func AddRoom(db *sql.DB, name string, description string) (int, error) {
 	result, err := db.Exec(`
-		INSERT INTO room (name, status, description) 
-		VALUES (?, ?, ?)
-	`, name, models.StatusAvailable, description)
+		INSERT INTO Room (Name, Status, Description, PlayerIDs) 
+		VALUES (?, 0, ?, "")
+	`, name, description)
 	if err != nil {
 		return 0, fmt.Errorf("error querying database with AddRoom: %w", err)
 	}
@@ -70,27 +69,28 @@ func AddRoom(db *sql.DB, name string, description string) (int, error) {
 }
 
 func UpdateRoomData(db *sql.DB, room models.Room) error {
-	query := "UPDATE rooms SET"
+	query := "UPDATE Room SET"
 	args := []interface{}{}
 	updates := []string{}
 
 	if room.Name != "" {
-		updates = append(updates, "name = ?")
+		updates = append(updates, "Name = ?")
 		args = append(args, room.Name)
 	}
 
 	if room.Status != 0 {
-		updates = append(updates, "status = ?")
+		updates = append(updates, "Status = ?")
 		args = append(args, room.Status)
 	}
 
 	if room.Description != "" {
-		updates = append(updates, "description = ?")
+		updates = append(updates, "Description = ?")
 		args = append(args, room.Description)
 	}
 
+	//need to think about it to do it
 	if room.PlayerIDs != "" {
-		updates = append(updates, "player_ids = ?")
+		updates = append(updates, "PlayerIDs = ?")
 		args = append(args, room.PlayerIDs)
 	}
 
@@ -120,8 +120,8 @@ func UpdateRoomData(db *sql.DB, room models.Room) error {
 
 func DeleteRoom(db *sql.DB, id int) error {
 	result, err := db.Exec(`
-		DELETE FROM players 
-		WHERE id = ?
+		DELETE FROM Room 
+		WHERE ID = ?
 	`, id)
 	if err != nil {
 		return fmt.Errorf("error querying database with DeleteRoom: %w", err)
@@ -145,11 +145,11 @@ func searchPlayerInRoom(db *sql.DB, playerIDs []int) ([]models.PlayerRank, error
 
 	var query string = fmt.Sprintf(`
         SELECT 
-		p.id, p.name, l.rank 
-        FROM players p
-        INNER JOIN levels l ON p.level_id = l.id
-        WHERE p.id IN (%s)
-        ORDER BY p.id
+		P.ID, P.Name, L.LV 
+        FROM Player P
+        INNER JOIN Level L ON P.LevelID = L.ID
+        WHERE P.ID IN (%s)
+        ORDER BY P.ID
     `, strings.Join(placeholders, ","))
 
 	rows, err := db.Query(query, args...)
@@ -164,7 +164,7 @@ func searchPlayerInRoom(db *sql.DB, playerIDs []int) ([]models.PlayerRank, error
 		err := rows.Scan(
 			&playerRank.ID,
 			&playerRank.Name,
-			&playerRank.Rank,
+			&playerRank.LV,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("error scanning row with searchPlayerInRoom: %w", err)

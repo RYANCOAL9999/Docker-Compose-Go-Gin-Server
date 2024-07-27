@@ -10,8 +10,8 @@ import (
 func GetLevelsData(db *sql.DB) ([]models.Level, error) {
 	rows, err := db.Query(`
 		SELECT 
-		id, name 
-		FROM levels
+		ID, Name, LV 
+		FROM Level
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("error querying database with GetLevelsData: %w", err)
@@ -23,6 +23,7 @@ func GetLevelsData(db *sql.DB) ([]models.Level, error) {
 		err := rows.Scan(
 			&l.ID,
 			&l.Name,
+			&l.LV,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("error scanning row with GetLevelsData: %w", err)
@@ -32,11 +33,11 @@ func GetLevelsData(db *sql.DB) ([]models.Level, error) {
 	return levels, nil
 }
 
-func AddLevel(db *sql.DB, name string, rank int) (int, error) {
+func AddLevel(db *sql.DB, name string, lv int) (int, error) {
 	result, err := db.Exec(`
-		INSERT INTO levels (name, rank) 
-		VALUES (?)
-	`, name, rank)
+		INSERT INTO Level (Name, LV) 
+		VALUES (?, ?)
+	`, name, lv)
 	if err != nil {
 		return 0, fmt.Errorf("error querying database with AddLevel: %w", err)
 	}

@@ -22,27 +22,27 @@ func aizuArray(A string) []int {
 func ListReservation(db *sql.DB, roomID int, startDate, endDate time.Time, limit int) ([]models.ReservationRoom, error) {
 	query := `
         SELECT
-		r.id AS reservation_id,
-		rm.id AS room_id,
-		r.date_time AS reservation_date_time,
-		rm.player_ids AS player_ids
-        FROM reservations r
-        INNER JOIN rooms rm ON r.room_id = rm.id
+		R.ID AS ReservationID,
+		RM.ID AS RoomID,
+		R.Date AS ReservationDate,
+		RM.PlayerIDs AS PlayerIDs
+        FROM Reservation R
+        INNER JOIN Room RM ON R.RoomID = RM.ID
         WHERE 1 = 1
     `
 	args := []interface{}{}
 
 	if roomID != 0 {
-		query += " AND room_id = ?"
+		query += " AND RoomID = ?"
 		args = append(args, roomID)
 	}
 
 	if !startDate.IsZero() && !endDate.IsZero() {
-		query += " AND date BETWEEN ? AND ?"
+		query += " AND ReservationDate BETWEEN ? AND ?"
 		args = append(args, startDate, endDate)
 	}
 
-	query += " ORDER BY reservation_id"
+	query += " ORDER BY ReservationID"
 
 	if limit > 0 {
 		query += " LIMIT ?"
@@ -86,7 +86,7 @@ func ListReservation(db *sql.DB, roomID int, startDate, endDate time.Time, limit
 // insertReservation function
 func InsertReservation(db *sql.DB, roomID int, date time.Time) (int, error) {
 	result, err := db.Exec(`
-		INSERT INTO reservations (room_id, date) 
+		INSERT INTO Reservation (RoomID, Date) 
 		VALUES (?, ?)
 	`, roomID, date)
 	if err != nil {

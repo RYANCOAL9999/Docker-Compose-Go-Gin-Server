@@ -8,31 +8,31 @@ import (
 	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/gameLogCollector/models"
 )
 
-func ListLogs(db *sql.DB, playerID int, action string, startTime time.Time, endTime time.Time, limit int) ([]models.Log, error) {
+func ListLogs(db *sql.DB, playerID int, action string, startTime time.Time, endTime time.Time, limit int) ([]models.GameLog, error) {
 
 	query := `
 		SELECT 
-		id, player_id, action, timestamp, details 
-		FROM game_logs 
+		ID, PlayerID, Action, Timestamp, Details 
+		FROM GameLog 
 		WHERE 1 = 1
 	`
 	var args []interface{}
 
 	if playerID != 0 {
-		query += " AND player_id = ?"
+		query += " AND PlayerID = ?"
 		args = append(args, playerID)
 	}
 	if action != "" {
-		query += " AND action = ?"
+		query += " AND Action = ?"
 		args = append(args, action)
 	}
 
 	if !startTime.IsZero() && !endTime.IsZero() {
-		query += " AND timestamp BETWEEN ? AND ?"
+		query += " AND Timestamp BETWEEN ? AND ?"
 		args = append(args, startTime, endTime)
 	}
 
-	query += " ORDER BY timestamp DESC"
+	query += " ORDER BY Timestamp DESC"
 
 	if limit != 0 {
 		query += " LIMIT ?"
@@ -45,9 +45,9 @@ func ListLogs(db *sql.DB, playerID int, action string, startTime time.Time, endT
 	}
 	defer rows.Close()
 
-	var logs []models.Log
+	var logs []models.GameLog
 	for rows.Next() {
-		var log models.Log
+		var log models.GameLog
 		err := rows.Scan(
 			&log.ID,
 			&log.PlayerID,
@@ -63,9 +63,9 @@ func ListLogs(db *sql.DB, playerID int, action string, startTime time.Time, endT
 	return logs, nil
 }
 
-func AddLog(db *sql.DB, log models.Log) (int, error) {
+func AddLog(db *sql.DB, log models.GameLog) (int, error) {
 	result, err := db.Exec(`
-		INSERT INTO game_logs (player_id, action, timestamp, details) 
+		INSERT INTO GameLog (PlayerID, Action, Timestamp, Details) 
 		VALUES (?, ?, ?, ?)
 	`, log.PlayerID, log.Action, time.Now(), log.Details)
 	if err != nil {

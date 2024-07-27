@@ -2,7 +2,8 @@ package models
 
 import "time"
 
-type Log struct {
+// table for GameLog
+type GameLog struct {
 	ID        int64     `json:"id"`
 	PlayerID  string    `json:"player_id" binding:"required"`
 	Action    string    `json:"action" binding:"required"`

@@ -3,7 +3,6 @@ package databases
 import (
 	"database/sql"
 	"fmt"
-	"time"
 
 	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/paymentProcessingSystem/models"
 )
@@ -12,8 +11,8 @@ func GetPayment(db *sql.DB, id int) (*models.Payment, error) {
 	var payment models.Payment
 	err := db.QueryRow(`
 		SELECT 
-		id, method, amount, describle 
-		FROM payment 
+		ID, Method, Amount, Describle, Timestamp 
+		FROM Payment 
 		WHERE id = ?
 	`, id).Scan(
 		&payment.ID,
@@ -31,9 +30,9 @@ func GetPayment(db *sql.DB, id int) (*models.Payment, error) {
 
 func AddPayment(db *sql.DB, payment models.Payment) (int, error) {
 	result, err := db.Exec(`
-		INSERT INTO payment (method, amount, describle, timestamp) 
-		VALUES (?, ?, ?, ?)
-	`, payment.Method, payment.Amount, payment.Describle, time.Now())
+		INSERT INTO Payment (Method, Amount, Describle, Timestamp) 
+		VALUES (?, ?, ?, Now())
+	`, payment.Method, payment.Amount, payment.Describle)
 	if err != nil {
 		return 0, fmt.Errorf("error querying database with AddPayment: %w", err)
 	}

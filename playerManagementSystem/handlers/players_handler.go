@@ -27,7 +27,7 @@ func CreatePlayer(c *gin.Context, db *sql.DB) {
 		return
 	}
 
-	id, err := databases.AddPlayer(db, newPlayerRank.Name, newPlayerRank.Rank)
+	id, err := databases.AddPlayer(db, newPlayerRank.Name, newPlayerRank.LV)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

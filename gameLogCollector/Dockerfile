@@ -9,11 +9,11 @@ RUN GOSUMDB=off go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOPROXY=direct GOSUMDB=off go build -o server .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOPROXY=direct GOSUMDB=off go build -o gameLogCollector .
 
 # final stage
 FROM alpine:3.12 as production
 
-COPY --from=builder /app/server /app/server
+COPY --from=builder /app/gameLogCollector /app/gameLogCollector
 
-CMD ["/app/server"]
+CMD ["/app/gameLogCollector"]

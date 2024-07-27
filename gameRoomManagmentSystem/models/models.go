@@ -1,7 +1,5 @@
 package models
 
-import "time"
-
 type Status int
 
 const (
@@ -15,29 +13,30 @@ const (
 type Room struct {
 	ID          int    `json:"id"`
 	Name        string `json:"name" binding:"required"`
-	Status      Status `json:"status" binding:"required"`
+	Status      Status `json:"status"`
 	Description string `json:"description" binding:"required"`
-	PlayerIDs   string `json:"player_ids" binding:"required"`
+	PlayerIDs   string `json:"player_ids"`
 }
 
 // struct for Completed the ReservationRoom
 type PlayerRank struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`
-	Rank int    `json:"rank"`
+	LV   int    `json:"lv"`
 }
 
-// table for Reservation
+// struct for Reservation request
 type Reservation struct {
-	ID     int       `json:"id"`
-	RoomID int       `json:"room_id" binding:"required"`
-	Date   time.Time `json:"date" binding:"required"`
+	ID        int    `json:"id"`
+	RoomID    int    `json:"room_id" binding:"required"`
+	Date      string `json:"date" binding:"required"`
+	PlayerIDs string `json:"player_ids" binding:"required"`
 }
 
 // return struct for Reservation
 type ReservationRoom struct {
 	ID     int          `json:"id"`
 	RoomID int          `json:"room_id"`
-	Date   time.Time    `json:"date"`
+	Date   string       `json:"date"`
 	Player []PlayerRank `json:"player"`
 }

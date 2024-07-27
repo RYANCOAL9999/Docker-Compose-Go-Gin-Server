@@ -7,12 +7,18 @@ import (
 	"os"
 
 	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/gameLogCollector/handlers"
+	"github.com/joho/godotenv"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 )
 
 func main() {
+	// Load environment variables from .env file
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
 	// Database connection
 	db, err := sql.Open("mysql", os.Getenv("DB_CONNECTION_STRING"))
 	if err != nil {

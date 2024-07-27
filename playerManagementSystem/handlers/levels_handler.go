@@ -25,7 +25,7 @@ func CreateLevel(c *gin.Context, db *sql.DB) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	id, err := databases.AddLevel(db, newLevel.Name, newLevel.Rank)
+	id, err := databases.AddLevel(db, newLevel.Name, newLevel.LV)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -35,7 +35,7 @@ func getLogs(c *gin.Context, db *sql.DB) {
 }
 
 func CreateLog(c *gin.Context, db *sql.DB) {
-	var newLog models.Log
+	var newLog models.GameLog
 	if err := c.BindJSON(&newLog); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

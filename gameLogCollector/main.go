@@ -17,6 +17,20 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
+// @title Game Log Collector API
+// @version 1.0
+// @description This is a game log collector server.
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name Steven Poon
+// @contact.url  https://github.com/RYANCOAL9999
+// @contact.email lmf242003@gmail.com
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host :8084
+// @BasePath /v2
 func main() {
 	// Load environment variables from .env file
 	err := godotenv.Load()

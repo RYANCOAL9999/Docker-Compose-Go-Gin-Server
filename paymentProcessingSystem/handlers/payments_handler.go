@@ -87,7 +87,7 @@ func MakeThirdPartyPayment(payment models.Payment) *models.PaymentResponse {
 
 func MakeBlockchainPayment(payment models.Payment) *models.PaymentResponse {
 
-	var url string = "https://api.blockchainplatform.com/transaction"
+	const url string = "https://api.blockchainplatform.com/transaction"
 
 	paymentReq := models.BlockchainPaymentRequest{
 		SenderAddress:   payment.Describle.Sender,

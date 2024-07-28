@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/gameRoomManagmentSystem/databases"
-	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/gameRoomManagmentSystem/models"
+	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/gameRoomManagementSystem/databases"
+	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/gameRoomManagementSystem/models"
 
 	"github.com/gin-gonic/gin"
 )

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/gameRoomManagmentSystem/models"
+	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/gameRoomManagementSystem/models"
 )
 
 func ListRooms(db *sql.DB) ([]models.Room, error) {
@@ -134,7 +134,7 @@ func DeleteRoom(db *sql.DB, id int) error {
 	return nil
 }
 
-func searchPlayerInRoom(db *sql.DB, playerIDs []int) ([]models.PlayerRank, error) {
+func SearchPlayerInRoom(db *sql.DB, playerIDs []int) ([]models.PlayerRank, error) {
 	// Create a string of placeholders for the IN clause
 	placeholders := make([]string, len(playerIDs))
 	args := make([]interface{}, len(playerIDs))

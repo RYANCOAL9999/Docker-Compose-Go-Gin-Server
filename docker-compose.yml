@@ -57,9 +57,9 @@ services:
 
   server3:
     build:
-      context: ./gameRoomManagmentSystem
+      context: ./gameRoomManagementSystem
       dockerfile: Dockerfile
-    container_name: gameRoomManagmentSystem
+    container_name: gameRoomManagementSystem
     depends_on:
       - mysql
     networks:

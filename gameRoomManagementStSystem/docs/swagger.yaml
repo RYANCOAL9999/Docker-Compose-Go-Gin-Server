@@ -81,12 +81,12 @@ info:
     name: Steven Poon
     url: https://github.com/RYANCOAL9999
     email: lmf242003@gmail.com    
-  description: This is a game room managment system server.
+  description: This is a Game Room Management System server.
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
-  title: Game Room Managment System API
+  title: Game Room Management System API
   version: "1.0"
 paths:
   /reservations:

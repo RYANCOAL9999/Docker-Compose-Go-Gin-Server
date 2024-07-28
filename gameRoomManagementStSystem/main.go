@@ -6,8 +6,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/gameRoomManagmentSystem/docs"
-	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/gameRoomManagmentSystem/handlers"
+	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/gameRoomManagementSystem/docs"
+	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/gameRoomManagementSystem/handlers"
 	"github.com/joho/godotenv"
 
 	swaggerfiles "github.com/swaggo/files"
@@ -17,9 +17,9 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// @title Game Room Managment System API
+// @title Game Room Management System API
 // @version 1.0
-// @description This is a game room managment system server.
+// @description This is a Game Room Management System server.
 // @termsOfService http://swagger.io/terms/
 
 // @contact.name Steven Poon

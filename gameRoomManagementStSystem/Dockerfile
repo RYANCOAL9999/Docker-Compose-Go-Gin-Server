@@ -13,7 +13,7 @@ RUN GOSUMDB=off go mod download
 COPY . .
 
 # Build the Go app
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOPROXY=direct GOSUMDB=off go build -o gameRoomManagmentSystem .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOPROXY=direct GOSUMDB=off go build -o gameRoomManagementSystem .
 
 # Final stage
 FROM alpine:3.12 as production
@@ -22,7 +22,7 @@ FROM alpine:3.12 as production
 WORKDIR /app
 
 # Copy the compiled binary from the builder stage
-COPY --from=builder /app/gameRoomManagmentSystem .
+COPY --from=builder /app/gameRoomManagementSystem .
 
 # Copy the .env.example to .env in the final image
 COPY .env.example .env
@@ -31,4 +31,4 @@ COPY .env.example .env
 ENV PORT=${PORT}
 
 # Run the application
-CMD ["sh", "-c", "./gameRoomManagmentSystem"]
+CMD ["sh", "-c", "./gameRoomManagementSystem"]

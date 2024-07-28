@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/gameRoomManagmentSystem/databases"
-	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/gameRoomManagmentSystem/models"
+	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/gameRoomManagementSystem/databases"
+	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/gameRoomManagementSystem/models"
 	"github.com/gin-gonic/gin"
 )
 
@@ -45,7 +45,7 @@ func GetReservations(c *gin.Context, db *sql.DB) {
 	c.JSON(http.StatusOK, args)
 }
 
-func updateReservationRoom(db *sql.DB, roomID int, playerIDs string) error {
+func UpdateReservationRoom(db *sql.DB, roomID int, playerIDs string) error {
 	var room models.Room
 	room.ID = roomID
 	room.PlayerIDs = playerIDs
@@ -101,7 +101,7 @@ func CreateReservations(c *gin.Context, db *sql.DB) {
 		return
 	}
 
-	err = updateReservationRoom(db, reservation.RoomID, reservation.PlayerIDs)
+	err = UpdateReservationRoom(db, reservation.RoomID, reservation.PlayerIDs)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: err.Error()})

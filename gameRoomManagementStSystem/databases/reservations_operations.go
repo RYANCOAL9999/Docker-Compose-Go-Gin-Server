@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/gameRoomManagmentSystem/models"
+	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/gameRoomManagementSystem/models"
 )
 
 func AizuArray(A string) []int {
@@ -71,7 +71,7 @@ func ListReservation(db *sql.DB, roomID int, startDate, endDate time.Time, limit
 
 		playerIDs := AizuArray(playerIDsStr)
 
-		r.Player, _ = searchPlayerInRoom(db, playerIDs)
+		r.Player, _ = SearchPlayerInRoom(db, playerIDs)
 
 		reservations = append(reservations, r)
 	}

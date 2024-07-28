@@ -41,7 +41,9 @@
                     },
                     "500": {
                         "description": "Internal server error",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
                     }
                 }
             },
@@ -72,16 +74,20 @@
                     "201": {
                         "description": "Level created successfully with the generated ID",
                         "schema": {
-                            "type": "number"
+                            "$ref": "#/definitions/models.CreateResponse"
                         }
                     },
                     "400": {
                         "description": "Bad request due to invalid input",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
                     },
                     "500": {
                         "description": "Internal server error",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
                     }
                 }
             }
@@ -111,7 +117,9 @@
                     },
                     "500": {
                         "description": "Internal server error",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
                     }
                 }
             },
@@ -142,7 +150,7 @@
                     "200": {
                         "description": "Player updated successfully",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/models.SuccessResponse"
                         }
                     },
                     "400": {
@@ -182,16 +190,20 @@
                     "201": {
                         "description": "Player created successfully with the generated ID",
                         "schema": {
-                            "type": "number"
+                            "$ref": "#/definitions/models.CreateResponse"
                         }
                     },
                     "400": {
                         "description": "Bad request due to invalid input",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
                     },
                     "500": {
                         "description": "Internal server error",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
                     }
                 }
             }
@@ -227,11 +239,15 @@
                     },
                     "400": {
                         "description": "Invalid ID supplied",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
                     },
                     "500": {
                         "description": "Internal server error",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
                     }
                 }
             },
@@ -260,22 +276,42 @@
                     "200": {
                         "description": "Player deleted successfully",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/models.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid ID supplied",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
                     },
                     "500": {
                         "description": "Internal server error",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
                     }
                 }
             }
         }
     },
     "definitions": {
+        "models.CreateResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
         "models.Level": {
             "type": "object",
             "required": [
@@ -307,6 +343,9 @@
                     "type": "string"
                 }
             }
+        },
+        "models.SuccessResponse": {
+            "type": "object"
         }
     }
 }

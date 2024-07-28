@@ -103,45 +103,64 @@ func MakeBlockchainPayment(payment models.Payment) *models.PaymentResponse {
 
 }
 
+// @Summary      Retrieve a payment by ID
+// @Description  Get details of a specific payment identified by its ID from the database.
+// @Tags         payments
+// @Accept       json
+// @Produce      json
+// @Param        id  path  int  true  "Payment ID"
+// @Success      200  {object}  models.Payment  "Payment details"
+// @Failure      400  {object}  models.ErrorResponse  "Invalid ID supplied"
+// @Failure      500  {object}  models.ErrorResponse  "Internal server error"
+// @Router       /payments/{id} [get]
 func ShowPayment(c *gin.Context, db *sql.DB) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	payment, err := databases.GetPayment(db, id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, payment)
 }
 
+// @Summary      Create a new payment
+// @Description  Create a new payment entry in the database using the provided payment details. The payment can be of various methods including credit card, bank transfer, third-party, or blockchain.
+// @Tags         payments
+// @Accept       json
+// @Produce      json
+// @Param        payment  body  models.Payment  true  "Payment details to be created"
+// @Success      201  {object}  models.PaymentResult  "Payment created successfully with the payment ID"
+// @Failure      400  {object}  models.ErrorResponse  "Bad request due to invalid input"
+// @Failure      500  {object}  models.ErrorResponse  "Internal server error"
+// @Router       /payments [post]
 func CreatePayment(c *gin.Context, db *sql.DB) {
 	var payment models.Payment
 	if err := c.BindJSON(&payment); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	// var item *models.PaymentResponse
+	var item *models.PaymentResponse
 
-	// switch method := payment.Method; method {
-	// case "CreditCardPayment":
-	// 	item = MakeCreditCardPayment(payment)
-	// case "BankTransfer":
-	// 	item = MakeCreditCardPayment(payment)
-	// case "ThirdPartyPayment":
-	// 	item = MakeThirdPartyPayment(payment)
-	// case "BlockchainPayment":
-	// 	item = MakeBlockchainPayment(payment)
-	// }
+	switch method := payment.Method; method {
+	case "CreditCardPayment":
+		item = MakeCreditCardPayment(payment)
+	case "BankTransfer":
+		item = MakeCreditCardPayment(payment)
+	case "ThirdPartyPayment":
+		item = MakeThirdPartyPayment(payment)
+	case "BlockchainPayment":
+		item = MakeBlockchainPayment(payment)
+	}
 
 	paymentID, err := databases.AddPayment(db, payment)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: err.Error()})
 		return
 	}
 
 	var result models.PaymentResult
 	result.ID = paymentID
-	result.Status = "Success"
-	// result.Status = item.Status
+	result.Status = item.Status
 	c.JSON(http.StatusCreated, result)
 }

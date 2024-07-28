@@ -1,0 +1,312 @@
+definitions:
+  models.CreateResponse:
+    properties:
+      id:
+        type: integer
+    type: object
+  models.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  models.PlayerRank:
+    properties:
+      id:
+        type: integer
+      lv:
+        type: integer
+      name:
+        type: string
+    type: object
+  models.Reservation:
+    properties:
+      date:
+        type: string
+      id:
+        type: integer
+      player_ids:
+        type: string
+      room_id:
+        type: integer
+    required:
+    - date
+    - player_ids
+    - room_id
+    type: object
+  models.ReservationRoom:
+    properties:
+      date:
+        type: string
+      id:
+        type: integer
+      player:
+        items:
+          $ref: '#/definitions/models.PlayerRank'
+        type: array
+      room_id:
+        type: integer
+    type: object
+  models.Room:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      player_ids:
+        type: string
+      status:
+        $ref: '#/definitions/models.Status'
+    required:
+    - description
+    - name
+    type: object
+  models.Status:
+    enum:
+    - 0
+    - 1
+    - 2
+    - 3
+    type: integer
+    x-enum-varnames:
+    - StatusAvailable
+    - StatusOccupied
+    - StatusMaintenance
+    - StatusClosed
+  models.SuccessResponse:
+    type: object
+info:
+  contact:
+    name: Steven Poon
+    url: https://github.com/RYANCOAL9999
+    email: lmf242003@gmail.com    
+  description: This is a game room managment system server.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Game Room Managment System API
+  version: "1.0"
+paths:
+  /reservations:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of reservations based on optional filters such as room
+        ID, start date, end date, and limit. Returns reservations that match the criteria.
+      parameters:
+      - description: Filter reservations by room ID
+        in: query
+        name: room_id
+        type: integer
+      - description: 'Filter reservations starting from this date (format: YYYY-MM-DD)'
+        in: query
+        name: start_date
+        type: string
+      - description: 'Filter reservations ending at this date (format: YYYY-MM-DD)'
+        in: query
+        name: end_date
+        type: string
+      - description: Limit the number of results returned
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of reservations matching the criteria
+          schema:
+            items:
+              $ref: '#/definitions/models.ReservationRoom'
+            type: array
+        "400":
+          description: Bad request due to invalid query parameters
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Retrieve reservations
+      tags:
+      - reservations
+    post:
+      consumes:
+      - application/json
+      description: Creates a new reservation for a specified room if the room is available.
+        The request body must include the room ID, date of reservation, and player
+        IDs. If successful, returns the ID of the created reservation.
+      parameters:
+      - description: Reservation details to be created
+        in: body
+        name: reservation
+        required: true
+        schema:
+          $ref: '#/definitions/models.Reservation'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Reservation created successfully, returns the ID of the new
+            reservation
+          schema:
+            $ref: '#/definitions/models.CreateResponse'
+        "400":
+          description: Bad request due to invalid input or date format
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Create a reservation
+      tags:
+      - reservations
+  /rooms:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of all rooms available in the database along with their
+        details such as name, status, description, and player IDs.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of rooms
+          schema:
+            items:
+              $ref: '#/definitions/models.Room'
+            type: array
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Retrieve all rooms
+      tags:
+      - rooms
+    post:
+      consumes:
+      - application/json
+      description: Add a new room to the database with the provided name, description,
+        and status. PlayerIDs are optional and can be set later.
+      parameters:
+      - description: Room details to be created
+        in: body
+        name: room
+        required: true
+        schema:
+          $ref: '#/definitions/models.Room'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: ID of the created room
+          schema:
+            $ref: '#/definitions/models.CreateResponse'
+        "400":
+          description: Bad request due to invalid input
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Create a new room
+      tags:
+      - rooms
+    put:
+      consumes:
+      - application/json
+      description: Update the details of an existing room in the database. The request
+        body should include the room's ID, name, status, description, and player IDs.
+        The ID is used to identify the room to be updated.
+      parameters:
+      - description: Room details to be updated
+        in: body
+        name: room
+        required: true
+        schema:
+          $ref: '#/definitions/models.Room'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Update successful
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Bad request due to invalid input
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Update a room
+      tags:
+      - rooms
+  /rooms/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a specific room from the database using its ID. If the room
+        exists, it will be deleted.
+      parameters:
+      - description: Room ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Delete successful
+          schema:
+            $ref: '#/definitions/models.SuccessResponse'
+        "400":
+          description: Invalid ID supplied
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Delete a room
+      tags:
+      - rooms
+    get:
+      consumes:
+      - application/json
+      description: Fetch details of a specific room from the database identified by
+        its ID. Returns room details including name, status, description, and player
+        IDs.
+      parameters:
+      - description: Room ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Details of the room
+          schema:
+            items:
+              $ref: '#/definitions/models.Room'
+            type: array
+        "400":
+          description: Invalid ID supplied
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Retrieve a room by ID
+      tags:
+      - rooms
+swagger: "2.0"

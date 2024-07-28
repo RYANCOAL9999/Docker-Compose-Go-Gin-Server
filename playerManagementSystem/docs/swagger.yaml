@@ -1,4 +1,14 @@
 definitions:
+  models.CreateResponse:
+    properties:
+      id:
+        type: integer
+    type: object
+  models.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
   models.Level:
     properties:
       id:
@@ -19,6 +29,8 @@ definitions:
         type: integer
       name:
         type: string
+    type: object
+  models.SuccessResponse:
     type: object
 info:
   contact:
@@ -49,7 +61,8 @@ paths:
             type: array
         "500":
           description: Internal server error
-          schema: {}
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       summary: List levels
       tags:
       - levels
@@ -70,13 +83,15 @@ paths:
         "201":
           description: Level created successfully with the generated ID
           schema:
-            type: number
+            $ref: '#/definitions/models.CreateResponse'
         "400":
           description: Bad request due to invalid input
-          schema: {}
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Internal server error
-          schema: {}
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Create a new level
       tags:
       - levels
@@ -96,7 +111,8 @@ paths:
             type: array
         "500":
           description: Internal server error
-          schema: {}
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       summary: List players
       tags:
       - players
@@ -117,13 +133,15 @@ paths:
         "201":
           description: Player created successfully with the generated ID
           schema:
-            type: number
+            $ref: '#/definitions/models.CreateResponse'
         "400":
           description: Bad request due to invalid input
-          schema: {}
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Internal server error
-          schema: {}
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Create a new player
       tags:
       - players
@@ -145,7 +163,7 @@ paths:
         "200":
           description: Player updated successfully
           schema:
-            type: string
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
           description: Bad request due to invalid input
           schema: {}
@@ -172,13 +190,15 @@ paths:
         "200":
           description: Player deleted successfully
           schema:
-            type: string
+            $ref: '#/definitions/models.SuccessResponse'
         "400":
           description: Invalid ID supplied
-          schema: {}
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Internal server error
-          schema: {}
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Delete a player
       tags:
       - players
@@ -202,10 +222,12 @@ paths:
             $ref: '#/definitions/models.PlayerRank'
         "400":
           description: Invalid ID supplied
-          schema: {}
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
         "500":
           description: Internal server error
-          schema: {}
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Retrieve a player by ID
       tags:
       - players

@@ -53,55 +53,65 @@ func CalculateChallengeResult(db *sql.DB, challengeID int, playerID int, probabi
 	log.Printf("Challenge result calculated for player %d. Won: %v", playerID, won)
 }
 
+// @Summary      Join a challenge
+// @Description  Allows a player to join a new challenge, provided they haven't participated in the last minute. It processes the challenge creation within a transaction, updates the prize pool, and starts a background task to calculate the challenge result after 30 seconds. Returns the status of the challenge creation.
+// @Tags         challenges
+// @Accept       json
+// @Produce      json
+// @Param        challenge  body  models.NewChallengeNeed  true  "Details for joining the challenge"
+// @Success      201  {object}  models.JoinChallengeResponse "Challenge joined successfully, returns the status of the challenge, it represent as number, 1 is joined, 0 is Ready"
+// @Failure      400  {object}  models.ErrorResponse "Bad request due to invalid input data"
+// @Failure      425  {object}  models.ErrorResponse "Too many requests if attempting to join within a minute"
+// @Failure      500  {object}  models.ErrorResponse "Internal server error during challenge creation or transaction"
+// @Router       /challenges/join [post]
 func JoinChallenges(c *gin.Context, db *sql.DB) {
 	var newChallengeNeed models.NewChallengeNeed
 
 	if err := c.ShouldBindJSON(&newChallengeNeed); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: err.Error()})
 		return
 	}
 
 	lastChallengeTime, err := databases.GetLastChallengeTime(db, newChallengeNeed.PlayerID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: err.Error()})
 		return
 	}
 
 	if time.Since(*lastChallengeTime) < time.Minute {
-		c.JSON(http.StatusTooEarly, gin.H{"error": "You can only participate once per minute"})
+		c.JSON(http.StatusTooEarly, models.ErrorResponse{Error: "You can only participate once per minute"})
 		return
 	}
 
 	// Start a transaction
 	tx, err := db.Begin()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start transaction"})
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to start transaction"})
 		return
 	}
 	defer tx.Rollback()
 
 	lastChallengeID, err := databases.AddNewChallenge(tx, newChallengeNeed)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to Add New Challenge "})
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to Add New Challenge "})
 		return
 	}
 
 	// need to update PrizePool Value
 	err = databases.UpdatePricePool(tx, newChallengeNeed.Amount)
 	if err != nil {
-		c.JSON(http.StatusTooEarly, gin.H{"error": "Failed to update price pool"})
+		c.JSON(http.StatusTooEarly, models.ErrorResponse{Error: "Failed to update price pool"})
 		return
 	}
 
 	if err := tx.Commit(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit transaction"})
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to commit transaction"})
 		return
 	}
 
 	challengeStatus, probability, err := databases.GetChallenge(db, lastChallengeID, newChallengeNeed.PlayerID)
-
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: err.Error()})
 		return
 	}
 
@@ -110,15 +120,25 @@ func JoinChallenges(c *gin.Context, db *sql.DB) {
 		CalculateChallengeResult(db, lastChallengeID, newChallengeNeed.PlayerID, *probability)
 	}()
 
-	c.JSON(http.StatusCreated, gin.H{"status": challengeStatus})
+	c.JSON(http.StatusCreated, models.JoinChallengeResponse{Status: *challengeStatus})
 }
 
+// @Summary      List recent challenges
+// @Description  Retrieves a list of recent challenges based on the provided limit. Returns the most recent challenge if there are multiple results.
+// @Tags         challenges
+// @Accept       json
+// @Produce      json
+// @Param        limit  query  int  true  "Maximum number of challenges to retrieve"
+// @Success      200  {object}  []models.Challenge  "List of recent challenges or the most recent challenge"
+// @Failure      400  {object}  models.ErrorResponse "Bad request due to invalid input data"
+// @Failure      500  {object}  models.ErrorResponse "Internal server error during retrieval"
+// @Router       /challenges [get]
 func ShowChallenges(c *gin.Context, db *sql.DB) {
 	var args interface{}
 	limit, _ := strconv.Atoi(c.Query("limit"))
 	challenges, err := databases.ListChallenges(db, limit)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: err.Error()})
 		return
 	}
 	if len(challenges) > 1 {

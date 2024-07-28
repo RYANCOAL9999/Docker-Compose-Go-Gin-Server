@@ -20,3 +20,17 @@ type PlayerRank struct {
 	Name string `json:"name"`
 	LV   int    `json:"lv"`
 }
+
+// ErrorResponse represents an error response with a single error message.
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
+// CreateResponse represents an id after created a item.
+type CreateResponse struct {
+	ID int `json:"id"`
+}
+
+// SuccessResponse represents an any after update or delete item.
+type SuccessResponse struct {
+}

@@ -57,3 +57,8 @@ type PaymentResponse struct {
 	Confirmations int    `json:"confirmations"`
 	Message       string `json:"message"`
 }
+
+// ErrorResponse represents an error response with a single error message.
+type ErrorResponse struct {
+	Error string `json:"error"`
+}

@@ -1,0 +1,123 @@
+definitions:
+  models.Describle:
+    properties:
+      card_number:
+        type: string
+      currency:
+        type: string
+      description:
+        type: string
+      expiration_date:
+        type: string
+      key:
+        type: string
+      receiver:
+        type: string
+      sender:
+        type: string
+    type: object
+  models.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  models.Payment:
+    properties:
+      amount:
+        type: number
+      describle:
+        $ref: '#/definitions/models.Describle'
+      id:
+        type: integer
+      method:
+        type: string
+      timestamp:
+        type: string
+    required:
+    - amount
+    - describle
+    - method
+    type: object
+  models.PaymentResult:
+    properties:
+      id:
+        type: integer
+      status:
+        type: string
+    type: object
+info:
+  contact:
+    name: Steven Poon
+    url: https://github.com/RYANCOAL9999
+    email: lmf242003@gmail.com    
+  description: This is a payment processing system server.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Payment Processing System API
+  version: "1.0"
+paths:
+  /payments:
+    post:
+      consumes:
+      - application/json
+      description: Create a new payment entry in the database using the provided payment
+        details. The payment can be of various methods including credit card, bank
+        transfer, third-party, or blockchain.
+      parameters:
+      - description: Payment details to be created
+        in: body
+        name: payment
+        required: true
+        schema:
+          $ref: '#/definitions/models.Payment'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Payment created successfully with the payment ID
+          schema:
+            $ref: '#/definitions/models.PaymentResult'
+        "400":
+          description: Bad request due to invalid input
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Create a new payment
+      tags:
+      - payments
+  /payments/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get details of a specific payment identified by its ID from the
+        database.
+      parameters:
+      - description: Payment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Payment details
+          schema:
+            $ref: '#/definitions/models.Payment'
+        "400":
+          description: Invalid ID supplied
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Retrieve a payment by ID
+      tags:
+      - payments
+swagger: "2.0"

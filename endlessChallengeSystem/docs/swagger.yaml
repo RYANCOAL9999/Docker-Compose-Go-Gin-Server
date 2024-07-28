@@ -1,0 +1,138 @@
+definitions:
+  models.Challenge:
+    properties:
+      amount:
+        type: number
+      created_at:
+        type: string
+      id:
+        type: integer
+      player_id:
+        type: string
+      probability:
+        type: number
+      status:
+        $ref: '#/definitions/models.Status'
+      won:
+        type: boolean
+    required:
+    - amount
+    - created_at
+    - player_id
+    - probability
+    - status
+    - won
+    type: object
+  models.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  models.JoinChallengeResponse:
+    properties:
+      status:
+        $ref: '#/definitions/models.Status'
+    type: object
+  models.NewChallengeNeed:
+    properties:
+      amount:
+        type: number
+      player_id:
+        type: integer
+    required:
+    - amount
+    - player_id
+    type: object
+  models.Status:
+    enum:
+    - 0
+    - 1
+    type: integer
+    x-enum-varnames:
+    - Ready
+    - Joined
+info:
+  contact:
+    name: Steven Poon
+    url: https://github.com/RYANCOAL9999
+    email: lmf242003@gmail.com    
+  description: This is a endless challenge system server.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Endless Challenge System API
+  version: "1.0"
+paths:
+  /challenges:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a list of recent challenges based on the provided limit.
+        Returns the most recent challenge if there are multiple results.
+      parameters:
+      - description: Maximum number of challenges to retrieve
+        in: query
+        name: limit
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of recent challenges or the most recent challenge
+          schema:
+            items:
+              $ref: '#/definitions/models.Challenge'
+            type: array
+        "400":
+          description: Bad request due to invalid input data
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal server error during retrieval
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: List recent challenges
+      tags:
+      - challenges
+  /challenges/join:
+    post:
+      consumes:
+      - application/json
+      description: Allows a player to join a new challenge, provided they haven't
+        participated in the last minute. It processes the challenge creation within
+        a transaction, updates the prize pool, and starts a background task to calculate
+        the challenge result after 30 seconds. Returns the status of the challenge
+        creation.
+      parameters:
+      - description: Details for joining the challenge
+        in: body
+        name: challenge
+        required: true
+        schema:
+          $ref: '#/definitions/models.NewChallengeNeed'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Challenge joined successfully, returns the status of the challenge,
+            it represent as number, 1 is joined, 0 is Ready
+          schema:
+            $ref: '#/definitions/models.JoinChallengeResponse'
+        "400":
+          description: Bad request due to invalid input data
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "425":
+          description: Too many requests if attempting to join within a minute
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal server error during challenge creation or transaction
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Join a challenge
+      tags:
+      - challenges
+swagger: "2.0"

@@ -6,8 +6,12 @@ import (
 	"log"
 	"os"
 
+	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/gameRoomManagmentSystem/docs"
 	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/gameRoomManagmentSystem/handlers"
 	"github.com/joho/godotenv"
+
+	swaggerfiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
@@ -42,11 +46,15 @@ func main() {
 	//Recovery returns a middleware if server is panics
 	r.Use(gin.Recovery())
 
+	docs.SwaggerInfo.BasePath = "/api/v1"
+
 	// Setup Rooms routes
 	handlers.SetupRoomsRoutes(r.Group("/rooms"), db)
 
 	// Setup Reservations routes
 	handlers.SetupReservationsRoutes(r.Group("/reservations"), db)
+
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
 	fmt.Println("Starting Go API service...")
 

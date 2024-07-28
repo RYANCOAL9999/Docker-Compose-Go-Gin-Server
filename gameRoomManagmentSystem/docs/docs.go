@@ -23,9 +23,9 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/levels": {
+        "/reservations": {
             "get": {
-                "description": "Retrieve a list of levels from the database.",
+                "description": "Get a list of reservations based on optional filters such as room ID, start date, end date, and limit. Returns reservations that match the criteria.",
                 "consumes": [
                     "application/json"
                 ],
@@ -33,17 +33,49 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "levels"
+                    "reservations"
                 ],
-                "summary": "List levels",
+                "summary": "Retrieve reservations",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Filter reservations by room ID",
+                        "name": "room_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter reservations starting from this date (format: YYYY-MM-DD)",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter reservations ending at this date (format: YYYY-MM-DD)",
+                        "name": "end_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit the number of results returned",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "A list of levels",
+                        "description": "List of reservations matching the criteria",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/models.Level"
+                                "$ref": "#/definitions/models.ReservationRoom"
                             }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request due to invalid query parameters",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
                         }
                     },
                     "500": {
@@ -55,7 +87,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a new level in the database using the provided level details.",
+                "description": "Creates a new reservation for a specified room if the room is available. The request body must include the room ID, date of reservation, and player IDs. If successful, returns the ID of the created reservation.",
                 "consumes": [
                     "application/json"
                 ],
@@ -63,29 +95,29 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "levels"
+                    "reservations"
                 ],
-                "summary": "Create a new level",
+                "summary": "Create a reservation",
                 "parameters": [
                     {
-                        "description": "Level details to be created",
-                        "name": "level",
+                        "description": "Reservation details to be created",
+                        "name": "reservation",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Level"
+                            "$ref": "#/definitions/models.Reservation"
                         }
                     }
                 ],
                 "responses": {
                     "201": {
-                        "description": "Level created successfully with the generated ID",
+                        "description": "Reservation created successfully, returns the ID of the new reservation",
                         "schema": {
                             "$ref": "#/definitions/models.CreateResponse"
                         }
                     },
                     "400": {
-                        "description": "Bad request due to invalid input",
+                        "description": "Bad request due to invalid input or date format",
                         "schema": {
                             "$ref": "#/definitions/models.ErrorResponse"
                         }
@@ -99,9 +131,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/players": {
+        "/rooms": {
             "get": {
-                "description": "Retrieve a list of players and their ranks from the database.",
+                "description": "Get a list of all rooms available in the database along with their details such as name, status, description, and player IDs.",
                 "consumes": [
                     "application/json"
                 ],
@@ -109,16 +141,16 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "players"
+                    "rooms"
                 ],
-                "summary": "List players",
+                "summary": "Retrieve all rooms",
                 "responses": {
                     "200": {
-                        "description": "A list of players with their ranks",
+                        "description": "List of rooms",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/models.PlayerRank"
+                                "$ref": "#/definitions/models.Room"
                             }
                         }
                     },
@@ -131,7 +163,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Update the details of an existing player in the database using the provided player information.",
+                "description": "Update the details of an existing room in the database. The request body should include the room's ID, name, status, description, and player IDs. The ID is used to identify the room to be updated.",
                 "consumes": [
                     "application/json"
                 ],
@@ -139,39 +171,43 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "players"
+                    "rooms"
                 ],
-                "summary": "Update player details",
+                "summary": "Update a room",
                 "parameters": [
                     {
-                        "description": "Player details to be updated",
-                        "name": "player",
+                        "description": "Room details to be updated",
+                        "name": "room",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.PlayerRank"
+                            "$ref": "#/definitions/models.Room"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Player updated successfully",
+                        "description": "Update successful",
                         "schema": {
                             "$ref": "#/definitions/models.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Bad request due to invalid input",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
                     },
                     "500": {
                         "description": "Internal server error",
-                        "schema": {}
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
                     }
                 }
             },
             "post": {
-                "description": "Create a new player in the database using the provided player details.",
+                "description": "Add a new room to the database with the provided name, description, and status. PlayerIDs are optional and can be set later.",
                 "consumes": [
                     "application/json"
                 ],
@@ -179,23 +215,23 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "players"
+                    "rooms"
                 ],
-                "summary": "Create a new player",
+                "summary": "Create a new room",
                 "parameters": [
                     {
-                        "description": "Player details to be created",
-                        "name": "player",
+                        "description": "Room details to be created",
+                        "name": "room",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.PlayerRank"
+                            "$ref": "#/definitions/models.Room"
                         }
                     }
                 ],
                 "responses": {
                     "201": {
-                        "description": "Player created successfully with the generated ID",
+                        "description": "ID of the created room",
                         "schema": {
                             "$ref": "#/definitions/models.CreateResponse"
                         }
@@ -215,9 +251,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/players/{id}": {
+        "/rooms/{id}": {
             "get": {
-                "description": "Get details of a specific player identified by their ID from the database.",
+                "description": "Fetch details of a specific room from the database identified by its ID. Returns room details including name, status, description, and player IDs.",
                 "consumes": [
                     "application/json"
                 ],
@@ -225,13 +261,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "players"
+                    "rooms"
                 ],
-                "summary": "Retrieve a player by ID",
+                "summary": "Retrieve a room by ID",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Player ID",
+                        "description": "Room ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -239,9 +275,12 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Player details",
+                        "description": "Details of the room",
                         "schema": {
-                            "$ref": "#/definitions/models.PlayerRank"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Room"
+                            }
                         }
                     },
                     "400": {
@@ -259,7 +298,7 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Remove a player from the database using the provided player ID.",
+                "description": "Remove a specific room from the database using its ID. If the room exists, it will be deleted.",
                 "consumes": [
                     "application/json"
                 ],
@@ -267,13 +306,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "players"
+                    "rooms"
                 ],
-                "summary": "Delete a player",
+                "summary": "Delete a room",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Player ID to be deleted",
+                        "description": "Room ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -281,7 +320,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Player deleted successfully",
+                        "description": "Delete successful",
                         "schema": {
                             "$ref": "#/definitions/models.SuccessResponse"
                         }
@@ -319,24 +358,6 @@ const docTemplate = `{
                 }
             }
         },
-        "models.Level": {
-            "type": "object",
-            "required": [
-                "lv",
-                "name"
-            ],
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "lv": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
         "models.PlayerRank": {
             "type": "object",
             "properties": {
@@ -351,6 +372,87 @@ const docTemplate = `{
                 }
             }
         },
+        "models.Reservation": {
+            "type": "object",
+            "required": [
+                "date",
+                "player_ids",
+                "room_id"
+            ],
+            "properties": {
+                "date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "player_ids": {
+                    "type": "string"
+                },
+                "room_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.ReservationRoom": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "player": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.PlayerRank"
+                    }
+                },
+                "room_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.Room": {
+            "type": "object",
+            "required": [
+                "description",
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "player_ids": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/models.Status"
+                }
+            }
+        },
+        "models.Status": {
+            "type": "integer",
+            "enum": [
+                0,
+                1,
+                2,
+                3
+            ],
+            "x-enum-varnames": [
+                "StatusAvailable",
+                "StatusOccupied",
+                "StatusMaintenance",
+                "StatusClosed"
+            ]
+        },
         "models.SuccessResponse": {
             "type": "object"
         }
@@ -360,11 +462,11 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             ":8081",
+	Host:             ":8083",
 	BasePath:         "/v2",
 	Schemes:          []string{},
-	Title:            "Player Management SystemAPI",
-	Description:      "This is a player management system server.",
+	Title:            "Game Room Managment System API",
+	Description:      "This is a game room managment system server.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

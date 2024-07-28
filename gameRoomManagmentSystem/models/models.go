@@ -40,3 +40,17 @@ type ReservationRoom struct {
 	Date   string       `json:"date"`
 	Player []PlayerRank `json:"player"`
 }
+
+// ErrorResponse represents an error response with a single error message.
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
+// CreateResponse represents an id after created a item.
+type CreateResponse struct {
+	ID int `json:"id"`
+}
+
+// SuccessResponse represents an any after update or delete item.
+type SuccessResponse struct {
+}

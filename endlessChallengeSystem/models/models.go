@@ -33,3 +33,13 @@ type NewChallengeNeed struct {
 	PlayerID int     `json:"player_id" binding:"required"`
 	Amount   float64 `json:"amount" binding:"required" validate:"eq=20.01"`
 }
+
+// JoinChallengeResponse represents player joined after status.
+type JoinChallengeResponse struct {
+	Status Status `json:"status"`
+}
+
+// ErrorResponse represents an error response with a single error message.
+type ErrorResponse struct {
+	Error string `json:"error"`
+}

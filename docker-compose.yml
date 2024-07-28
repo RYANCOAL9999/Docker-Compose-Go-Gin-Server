@@ -28,10 +28,9 @@ services:
       MYSQL_PASSWORD: 123456
     ports:
       - "3306:3306"
+    command: --init /data/application/init.sql
     volumes:
-      - mysql-data:/var/lib/mysql
-    env_file:
-      - ./.env
+      - ./init.sql :/data/application/init.sql
     networks:
       - app-network
 

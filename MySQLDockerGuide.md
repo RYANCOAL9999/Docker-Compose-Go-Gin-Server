@@ -26,8 +26,11 @@ docker exec -it mysql-container mysql -u root -p
 # Connect to MySQL from your host machine
 mysql -h 127.0.0.1 -P 3306 -u your_username -p your_password your_database_name
 
+# Assign endlessChallengeSystem
+mysql -u your_username -p your_database_name < db.sql
+
 # Stop the container
 docker stop mysql-container
 
 # Remove the container (warning: this will delete the container)
-docker rm mysql-container
+docker rm mysql-container 

@@ -146,7 +146,7 @@ func CreatePayment(c *gin.Context, db *sql.DB) {
 	case "CreditCardPayment":
 		item = MakeCreditCardPayment(payment)
 	case "BankTransfer":
-		item = MakeCreditCardPayment(payment)
+		item = MakeBankTransfer(payment)
 	case "ThirdPartyPayment":
 		item = MakeThirdPartyPayment(payment)
 	case "BlockchainPayment":

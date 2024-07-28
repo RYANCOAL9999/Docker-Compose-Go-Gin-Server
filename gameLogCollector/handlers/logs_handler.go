@@ -27,7 +27,7 @@ const time_format string = "2006-01-02 00:00:00"
 // @Failure      400  {object}  models.ErrorResponse "Bad request due to invalid query parameters"
 // @Failure      500  {object}  models.ErrorResponse "Internal server error"
 // @Router       /game_logs [get]
-func getLogs(c *gin.Context, db *sql.DB) {
+func GetLogs(c *gin.Context, db *sql.DB) {
 	var args interface{}
 	playerID, _ := strconv.Atoi(c.Query("player_id"))
 	action := c.Query("action")

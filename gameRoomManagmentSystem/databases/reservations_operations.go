@@ -10,7 +10,7 @@ import (
 	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/gameRoomManagmentSystem/models"
 )
 
-func aizuArray(A string) []int {
+func AizuArray(A string) []int {
 	strs := strings.Split(A, ", ")
 	ary := make([]int, len(strs))
 	for i := range ary {
@@ -69,7 +69,7 @@ func ListReservation(db *sql.DB, roomID int, startDate, endDate time.Time, limit
 			return nil, fmt.Errorf("error scanning row with ListReservation: %w", err)
 		}
 
-		playerIDs := aizuArray(playerIDsStr)
+		playerIDs := AizuArray(playerIDsStr)
 
 		r.Player, _ = searchPlayerInRoom(db, playerIDs)
 

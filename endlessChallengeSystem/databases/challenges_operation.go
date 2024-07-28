@@ -51,47 +51,34 @@ func ListChallenges(db *sql.DB, limit int) ([]models.Challenge, error) {
 	return challenges, nil
 }
 
-func GetLastChallengeTime(db *sql.DB, playerID int) (*time.Time, error) {
+func GetLastChallenge(db *sql.DB, playerID int) (*time.Time, float64, error) {
 	var lastChallengeTime time.Time
+	var lastProbability float64
 	err := db.QueryRow(`
 		SELECT 
-		CreatedAt 
+		CreatedAt, Probability
 		FROM Challenge 
 		WHERE PlayerID = ? 
 		ORDER BY CreatedAt DESC 
 		LIMIT 1
 	`, playerID).Scan(
 		&lastChallengeTime,
+		&lastProbability,
 	)
 	if err != nil && err != sql.ErrNoRows {
-		return nil, fmt.Errorf("error querying database with CreateChallenge: %w", err)
+		return nil, 0, fmt.Errorf("error querying database with CreateChallenge: %w", err)
 	}
-	return &lastChallengeTime, nil
+	return &lastChallengeTime, lastProbability, nil
 }
 
-func GetChallenge(db *sql.DB, challengeID int, playerID int) (*models.Status, *float64, error) {
-	var status models.Status
-	var probability float64
-	err := db.QueryRow(`
-		SELECT 
-		Status, Probability 
-		FROM Challenge 
-		WHERE ID = ? AND PlayerID = ? 
-	`, challengeID, playerID).Scan(
-		&status,
-		&probability,
-	)
-	if err != nil && err != sql.ErrNoRows {
-		return nil, nil, fmt.Errorf("error querying database with CreateChallenge: %w", err)
-	}
-	return &status, &probability, nil
-}
-
-func AddNewChallenge(tx *sql.Tx, newChallengeNeed models.NewChallengeNeed) (int, error) {
+func AddNewChallenge(tx *sql.Tx, newChallengeNeed models.NewChallengeNeed, status models.Status, probability float64) (int, error) {
 	result, err := tx.Exec(`
 		INSERT INTO Challenge (PlayerID, Amount, Status, Won, CreatedAt, Probability) 
-		VALUES (?, ?, 1, false, NOW(), 0)
-	`, newChallengeNeed.PlayerID, newChallengeNeed.Amount)
+		VALUES (?, ?, ?, false, NOW(), ?)
+	`, newChallengeNeed.PlayerID,
+		newChallengeNeed.Amount,
+		int(status),
+		probability)
 	if err != nil {
 		return 0, fmt.Errorf("error querying database with addNewChallenge: %w", err)
 	}
@@ -115,14 +102,16 @@ func UpdateChallenge(tx *sql.Tx, status models.Status, won bool, playerID int) e
 	_, err := tx.Exec(`
 		UPDATE Challenge 
 		SET Status = ?, Won = ? WHERE PlayerID = ?
-	`, status, won, playerID)
+	`, int(status),
+		won,
+		playerID)
 	if err != nil {
 		return fmt.Errorf("error updating challenge: %w", err)
 	}
 	return nil
 }
 
-func DistributePrizePool(tx *sql.Tx, challengeID int, playerID int) error {
+func DistributePrizePool(tx *sql.Tx, challengeID int, playerID int, status models.Status) error {
 	// know the player last win how much money
 	var prize float64
 	err := tx.QueryRow(`
@@ -140,9 +129,11 @@ func DistributePrizePool(tx *sql.Tx, challengeID int, playerID int) error {
 	// Update last challenges's won
 	_, err = tx.Exec(`
 		UPDATE challenges 
-		SET Won = 1, Probability = 0 
+		SET Won = 1, Probability = 0, Status = ? 
 		WHERE ID = ? AND PlayerID = ?
-	`, challengeID, playerID)
+	`, int(status),
+		challengeID,
+		playerID)
 	if err != nil {
 		return fmt.Errorf("error updating player's balance: %w", err)
 	}
@@ -161,14 +152,19 @@ func DistributePrizePool(tx *sql.Tx, challengeID int, playerID int) error {
 	return nil
 }
 
-func Updateprobability(tx *sql.Tx, challengeID int, playerID int, probability float64) error {
+func UpdateProbability(tx *sql.Tx, challengeID int, playerID int, probability float64, status models.Status) error {
 
 	// Update last challenge's won
 	_, err := tx.Exec(`
 		UPDATE Challenge 
-		SET Probability = 0 
+		SET 
+		Probability = ?, 
+		Status = ?  
 		WHERE ID = ? AND PlayerID = ?
-	`, challengeID, playerID)
+	`, probability,
+		int(status),
+		challengeID,
+		playerID)
 	if err != nil {
 		return fmt.Errorf("error updating player's balance: %w", err)
 	}

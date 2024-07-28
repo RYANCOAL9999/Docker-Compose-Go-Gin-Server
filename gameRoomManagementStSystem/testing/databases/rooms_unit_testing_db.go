@@ -3,6 +3,7 @@ package databases
 import (
 	"database/sql"
 	"database/sql/driver"
+	"errors"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -331,7 +332,77 @@ func TestUpdateRoomData(t *testing.T) {
 }
 
 func TestUpdateRoomData_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Failed to create mock database: %v", err)
+	}
+	defer db.Close()
 
+	tests := []struct {
+		name        string
+		setupMock   func(mock sqlmock.Sqlmock)
+		input       models.Room
+		expectedErr string
+	}{
+		{
+			name: "No fields to update",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				// No expectations set as the error occurs before DB interaction
+			},
+			input: models.Room{
+				ID: 1,
+			},
+			expectedErr: "no fields update for Room with id: 1",
+		},
+		{
+			name: "Database execution error",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectExec("UPDATE Room SET").WillReturnError(sql.ErrConnDone)
+			},
+			input: models.Room{
+				ID:   1,
+				Name: "Updated Room",
+			},
+			expectedErr: "error querying database with UpdateRoomData: sql: connection is already closed",
+		},
+		{
+			name: "RowsAffected error",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectExec("UPDATE Room SET").WillReturnResult(sqlmock.NewErrorResult(errors.New("RowsAffected error")))
+			},
+			input: models.Room{
+				ID:   1,
+				Name: "Updated Room",
+			},
+			expectedErr: "error updating room: RowsAffected error",
+		},
+		{
+			name: "No rows affected",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectExec("UPDATE Room SET").WillReturnResult(sqlmock.NewResult(0, 0))
+			},
+			input: models.Room{
+				ID:   1,
+				Name: "Updated Room",
+			},
+			expectedErr: "no rows were updated, room with id 1 may not exist",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setupMock(mock)
+
+			err := object.UpdateRoomData(db, tt.input)
+
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), tt.expectedErr)
+
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("Unfulfilled expectations: %s", err)
+			}
+		})
+	}
 }
 
 func TestDeleteRoom(t *testing.T) {
@@ -400,7 +471,58 @@ func TestDeleteRoom(t *testing.T) {
 }
 
 func TestDeleteRoom_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Failed to create mock database: %v", err)
+	}
+	defer db.Close()
 
+	tests := []struct {
+		name        string
+		setupMock   func(mock sqlmock.Sqlmock)
+		inputID     int
+		expectedErr string
+	}{
+		{
+			name: "Database execution error",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectExec("DELETE FROM Room").WithArgs(1).WillReturnError(sql.ErrConnDone)
+			},
+			inputID:     1,
+			expectedErr: "error querying database with DeleteRoom: sql: connection is already closed",
+		},
+		{
+			name: "Room not found",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectExec("DELETE FROM Room").WithArgs(1).WillReturnResult(sqlmock.NewResult(0, 0))
+			},
+			inputID:     1,
+			expectedErr: "room not found",
+		},
+		{
+			name: "RowsAffected error",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectExec("DELETE FROM Room").WithArgs(1).WillReturnResult(sqlmock.NewErrorResult(errors.New("RowsAffected error")))
+			},
+			inputID:     1,
+			expectedErr: "room not found",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setupMock(mock)
+
+			err := object.DeleteRoom(db, tt.inputID)
+
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), tt.expectedErr)
+
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("Unfulfilled expectations: %s", err)
+			}
+		})
+	}
 }
 
 func TestSearchPlayerInRoom(t *testing.T) {

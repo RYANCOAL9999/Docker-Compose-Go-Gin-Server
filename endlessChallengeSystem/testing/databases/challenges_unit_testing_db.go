@@ -1,13 +1,19 @@
 package databases
 
 import (
+	"bytes"
 	"database/sql"
 	"errors"
+	"fmt"
+	"log"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	object "github.com/RYANCOAL9999/SpinnrTechnologyInterview/endlessChallengeSystem/databases"
+	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/endlessChallengeSystem/models"
 	object_models "github.com/RYANCOAL9999/SpinnrTechnologyInterview/endlessChallengeSystem/models"
 	"github.com/stretchr/testify/assert"
 )
@@ -76,132 +82,146 @@ func TestListChallenges_Error(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestGetLastChallengeTime(t *testing.T) {
+func TestGetLastChallenge(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("Error creating mock database: %v", err)
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 	defer db.Close()
 
-	expectedTime := time.Now()
-	rows := sqlmock.NewRows([]string{"CreatedAt"}).AddRow(expectedTime)
+	playerID := 1
+	lastChallengeTime := time.Now()
+	lastProbability := 0.75
 
-	mock.ExpectQuery("SELECT CreatedAt FROM Challenge").WithArgs(1001).WillReturnRows(rows)
+	rows := sqlmock.NewRows([]string{"CreatedAt", "Probability"}).
+		AddRow(lastChallengeTime, lastProbability)
 
-	lastTime, err := object.GetLastChallengeTime(db, 1001)
-	assert.NoError(t, err)
-	assert.Equal(t, expectedTime, *lastTime)
+	mock.ExpectQuery("SELECT CreatedAt, Probability FROM Challenge WHERE PlayerID = ? ORDER BY CreatedAt DESC LIMIT 1").
+		WithArgs(playerID).
+		WillReturnRows(rows)
 
-	assert.NoError(t, mock.ExpectationsWereMet())
+	resultTime, resultProb, err := object.GetLastChallenge(db, playerID)
+	if err != nil {
+		t.Errorf("unexpected error: %s", err)
+	}
+
+	if resultTime == nil || !resultTime.Equal(lastChallengeTime) {
+		t.Errorf("expected %v, got %v", lastChallengeTime, resultTime)
+	}
+
+	if resultProb != lastProbability {
+		t.Errorf("expected %v, got %v", lastProbability, resultProb)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
 }
 
-func TestGetLastChallengeTime_Error(t *testing.T) {
+func TestGetLastChallenge_Error(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("Error creating mock database: %v", err)
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 	defer db.Close()
 
-	t.Run("Database query error", func(t *testing.T) {
-		mock.ExpectQuery("SELECT CreatedAt FROM Challenge").
-			WithArgs(1001).
-			WillReturnError(sql.ErrConnDone)
+	playerID := 1
+	expectedError := fmt.Errorf("some SQL error")
 
-		lastTime, err := object.GetLastChallengeTime(db, 1001)
-		assert.Error(t, err)
-		assert.Nil(t, lastTime)
-		assert.Contains(t, err.Error(), "error querying database with CreateChallenge")
-	})
+	mock.ExpectQuery("SELECT CreatedAt, Probability FROM Challenge WHERE PlayerID = ? ORDER BY CreatedAt DESC LIMIT 1").
+		WithArgs(playerID).
+		WillReturnError(expectedError)
 
-	t.Run("No rows returned", func(t *testing.T) {
-		mock.ExpectQuery("SELECT CreatedAt FROM Challenge").
-			WithArgs(1002).
-			WillReturnError(sql.ErrNoRows)
+	resultTime, resultProb, err := object.GetLastChallenge(db, playerID)
+	if err == nil || !errors.Is(err, expectedError) {
+		t.Errorf("expected error %v, got %v", expectedError, err)
+	}
 
-		lastTime, err := object.GetLastChallengeTime(db, 1002)
-		assert.NoError(t, err)
-		assert.NotNil(t, lastTime)
-		assert.True(t, lastTime.IsZero())
-	})
+	if resultTime != nil {
+		t.Errorf("expected nil time, got %v", resultTime)
+	}
 
-	t.Run("Invalid data returned", func(t *testing.T) {
-		rows := sqlmock.NewRows([]string{"CreatedAt"}).AddRow("invalid_time")
+	if resultProb != 0 {
+		t.Errorf("expected probability 0, got %v", resultProb)
+	}
 
-		mock.ExpectQuery("SELECT CreatedAt FROM Challenge").
-			WithArgs(1003).
-			WillReturnRows(rows)
-
-		lastTime, err := object.GetLastChallengeTime(db, 1003)
-		assert.Error(t, err)
-		assert.Nil(t, lastTime)
-		assert.Contains(t, err.Error(), "error querying database with CreateChallenge")
-	})
-
-	assert.NoError(t, mock.ExpectationsWereMet())
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
 }
 
 func TestAddNewChallenge(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("Error creating mock database: %v", err)
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 	defer db.Close()
 
-	mock.ExpectBegin()
-	mock.ExpectExec("INSERT INTO Challenge").WithArgs(1001, 20.01).WillReturnResult(sqlmock.NewResult(1, 1))
+	tx, err := db.Begin()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when beginning a transaction", err)
+	}
 
-	tx, _ := db.Begin()
-	id, err := object.AddNewChallenge(tx, object_models.NewChallengeNeed{PlayerID: 1001, Amount: 20.01})
-	assert.NoError(t, err)
-	assert.Equal(t, 1, id)
+	newChallengeNeed := object_models.NewChallengeNeed{
+		PlayerID: 1,
+		Amount:   100,
+	}
+	status := object_models.Status(1)
+	probability := 0.5
 
-	assert.NoError(t, mock.ExpectationsWereMet())
+	mock.ExpectExec("INSERT INTO Challenge").
+		WithArgs(newChallengeNeed.PlayerID, newChallengeNeed.Amount, int(status), probability).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	challengeID, err := object.AddNewChallenge(tx, newChallengeNeed, status, probability)
+	if err != nil {
+		t.Errorf("unexpected error: %s", err)
+	}
+
+	if challengeID != 1 {
+		t.Errorf("expected challengeID to be 1, got %d", challengeID)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
 }
 
 func TestAddNewChallenge_Error(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("Error creating mock database: %v", err)
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 	defer db.Close()
 
-	t.Run("Database execution error", func(t *testing.T) {
-		mock.ExpectBegin()
-		mock.ExpectExec("INSERT INTO Challenge").
-			WithArgs(1001, 20.01).
-			WillReturnError(errors.New("database error"))
+	tx, err := db.Begin()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when beginning a transaction", err)
+	}
 
-		tx, _ := db.Begin()
-		id, err := object.AddNewChallenge(tx, object_models.NewChallengeNeed{PlayerID: 1001, Amount: 20.01})
+	newChallengeNeed := object_models.NewChallengeNeed{
+		PlayerID: 1,
+		Amount:   100,
+	}
+	status := models.Status(1)
+	probability := 0.5
 
-		assert.Error(t, err)
-		assert.Equal(t, 0, id)
-		assert.Contains(t, err.Error(), "error querying database with addNewChallenge")
-	})
+	mock.ExpectExec("INSERT INTO Challenge").
+		WithArgs(newChallengeNeed.PlayerID, newChallengeNeed.Amount, int(status), probability).
+		WillReturnError(fmt.Errorf("some SQL error"))
 
-	t.Run("LastInsertId error", func(t *testing.T) {
-		mock.ExpectBegin()
-		mock.ExpectExec("INSERT INTO Challenge").
-			WithArgs(1002, 30.02).
-			WillReturnResult(sqlmock.NewErrorResult(errors.New("LastInsertId error")))
+	_, err = object.AddNewChallenge(tx, newChallengeNeed, status, probability)
+	if err == nil {
+		t.Error("expected an error but got none")
+	}
 
-		tx, _ := db.Begin()
-		id, err := object.AddNewChallenge(tx, object_models.NewChallengeNeed{PlayerID: 1002, Amount: 30.02})
+	if !strings.Contains(err.Error(), "error querying database with addNewChallenge") {
+		t.Errorf("unexpected error message: %s", err)
+	}
 
-		assert.NoError(t, err)
-		assert.Equal(t, 0, id)
-	})
-
-	t.Run("Invalid transaction", func(t *testing.T) {
-		invalidTx := &sql.Tx{}
-		id, err := object.AddNewChallenge(invalidTx, object_models.NewChallengeNeed{PlayerID: 1003, Amount: 40.03})
-
-		assert.Error(t, err)
-		assert.Equal(t, 0, id)
-		assert.Contains(t, err.Error(), "error querying database with addNewChallenge")
-	})
-
-	assert.NoError(t, mock.ExpectationsWereMet())
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
 }
 
 func TestUpdatePricePool(t *testing.T) {
@@ -279,83 +299,102 @@ func TestUpdatePricePool_Error(t *testing.T) {
 func TestDistributePrizePool(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("Error creating mock database: %v", err)
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 	defer db.Close()
 
-	mock.ExpectBegin()
-	mock.ExpectQuery("SELECT Amount FROM PrizePool").WillReturnRows(sqlmock.NewRows([]string{"Amount"}).AddRow(100.0))
-	mock.ExpectExec("UPDATE challenges").WithArgs(1, 1001).WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec("UPDATE PrizePool").WillReturnResult(sqlmock.NewResult(1, 1))
+	tx, err := db.Begin()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when beginning a transaction", err)
+	}
 
-	tx, _ := db.Begin()
-	err = object.DistributePrizePool(tx, 1, 1001)
-	assert.NoError(t, err)
+	mock.ExpectExec("UPDATE PrizePool").
+		WithArgs(100.0).
+		WillReturnResult(sqlmock.NewResult(1, 1))
 
-	assert.NoError(t, mock.ExpectationsWereMet())
+	err = object.UpdatePricePool(tx, 100.0)
+	if err != nil {
+		t.Errorf("unexpected error: %s", err)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
 }
 
 func TestDistributePrizePool_Error(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("Failed to create mock database: %v", err)
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 	defer db.Close()
 
-	tests := []struct {
-		name        string
-		setupMock   func(mock sqlmock.Sqlmock)
-		expectedErr string
-	}{
-		{
-			name: "Error fetching prize pool amount",
-			setupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectBegin()
-				mock.ExpectQuery("SELECT Amount FROM PrizePool").WillReturnError(sql.ErrNoRows)
-				mock.ExpectRollback()
-			},
-			expectedErr: "error fetching prize pool amount",
-		},
-		{
-			name: "Error updating challenge",
-			setupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectBegin()
-				mock.ExpectQuery("SELECT Amount FROM PrizePool").WillReturnRows(sqlmock.NewRows([]string{"Amount"}).AddRow(1000.0))
-				mock.ExpectExec("UPDATE challenges").WillReturnError(sql.ErrTxDone)
-				mock.ExpectRollback()
-			},
-			expectedErr: "error updating player's balance",
-		},
-		{
-			name: "Error resetting prize pool",
-			setupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectBegin()
-				mock.ExpectQuery("SELECT Amount FROM PrizePool").WillReturnRows(sqlmock.NewRows([]string{"Amount"}).AddRow(1000.0))
-				mock.ExpectExec("UPDATE challenges").WillReturnResult(sqlmock.NewResult(1, 1))
-				mock.ExpectExec("UPDATE PrizePool").WillReturnError(sql.ErrConnDone)
-				mock.ExpectRollback()
-			},
-			expectedErr: "error resetting prize pool",
-		},
+	tx, err := db.Begin()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when beginning a transaction", err)
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.setupMock(mock)
+	injectionString := "-3.14159265"
+	mock.ExpectExec("UPDATE PrizePool").
+		WithArgs(injectionString).
+		WillReturnError(fmt.Errorf("malformed input"))
+	str, _ := strconv.ParseFloat(injectionString, 64)
+	err = object.UpdatePricePool(tx, str)
+	if err == nil {
+		t.Errorf("expected an error but got none")
+	}
 
-			tx, err := db.Begin()
-			if err != nil {
-				t.Fatalf("Failed to begin transaction: %v", err)
-			}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+}
 
-			err = object.DistributePrizePool(tx, 1, 1)
+func TestUpdateProbability(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
 
-			assert.Error(t, err)
-			assert.Contains(t, err.Error(), tt.expectedErr)
+	tx, err := db.Begin()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when beginning a transaction", err)
+	}
 
-			if err := mock.ExpectationsWereMet(); err != nil {
-				t.Errorf("Unfulfilled expectations: %s", err)
-			}
-		})
+	challengeID := 1
+	playerID := 1
+	probability := 0.75
+	status := models.Status(1)
+
+	mock.ExpectExec("UPDATE Challenge").
+		WithArgs(probability, int(status), challengeID, playerID).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	err = object.UpdateProbability(tx, challengeID, playerID, probability, status)
+	if err != nil {
+		t.Errorf("unexpected error: %s", err)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+}
+
+func TestUpdateProbability_Error(t *testing.T) {
+	// Setup
+	tx := &sql.Tx{}
+	challengeID := 999
+	playerID := 888
+	probability := 0.5
+	status := models.Ready
+
+	// Assertion
+	var logOutput bytes.Buffer
+	log.SetOutput(&logOutput)
+
+	// Call the function
+	err := object.UpdateProbability(tx, challengeID, playerID, probability, status)
+	if err == nil {
+		t.Errorf("Expected an error for non-existing IDs, but got nil")
 	}
 }

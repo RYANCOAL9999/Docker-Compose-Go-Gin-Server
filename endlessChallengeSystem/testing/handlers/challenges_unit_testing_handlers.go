@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -218,7 +220,74 @@ func TestShowChallenges(t *testing.T) {
 }
 
 func TestShowChallenges_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Failed to create mock database: %v", err)
+	}
+	defer db.Close()
 
+	gin.SetMode(gin.TestMode)
+
+	tests := []struct {
+		name               string
+		setupMock          func(mock sqlmock.Sqlmock)
+		queryParams        string
+		expectedStatusCode int
+		expectedErrorMsg   string
+	}{
+		{
+			name: "Database error",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT").WillReturnError(sql.ErrConnDone)
+			},
+			queryParams:        "limit=10",
+			expectedStatusCode: http.StatusInternalServerError,
+			expectedErrorMsg:   "sql: connection is already closed",
+		},
+		{
+			name: "Invalid limit parameter",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				// No expectations set as the error occurs before DB interaction
+			},
+			queryParams:        "limit=invalid",
+			expectedStatusCode: http.StatusOK, // Note: The function doesn't handle this error explicitly
+			expectedErrorMsg:   "",            // No error message expected in this case
+		},
+		{
+			name: "No challenges found",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT").WillReturnRows(sqlmock.NewRows([]string{"id", "player_id", "amount"}))
+			},
+			queryParams:        "limit=10",
+			expectedStatusCode: http.StatusOK,
+			expectedErrorMsg:   "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setupMock(mock)
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request, _ = http.NewRequest(http.MethodGet, "/challenges?"+tt.queryParams, nil)
+
+			object.ShowChallenges(c, db)
+
+			assert.Equal(t, tt.expectedStatusCode, w.Code)
+
+			if tt.expectedErrorMsg != "" {
+				var response object_models.ErrorResponse
+				err := json.Unmarshal(w.Body.Bytes(), &response)
+				assert.NoError(t, err)
+				assert.Contains(t, response.Error, tt.expectedErrorMsg)
+			}
+
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("Unfulfilled expectations: %s", err)
+			}
+		})
+	}
 }
 
 func TestCalculateChallengeResult(t *testing.T) {
@@ -242,5 +311,71 @@ func TestCalculateChallengeResult(t *testing.T) {
 }
 
 func TestCalculateChallengeResult_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Failed to create mock database: %v", err)
+	}
+	defer db.Close()
 
+	tests := []struct {
+		name          string
+		setupMock     func(mock sqlmock.Sqlmock)
+		expectedError string
+	}{
+		{
+			name: "Failed to start transaction",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectBegin().WillReturnError(sql.ErrConnDone)
+			},
+			expectedError: "Failed to start transaction",
+		},
+		{
+			name: "Failed to distribute prize pool",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectBegin()
+				mock.ExpectExec("UPDATE challenges").WillReturnError(sql.ErrTxDone)
+				mock.ExpectRollback()
+			},
+			expectedError: "Failed to distribute prize pool",
+		},
+		{
+			name: "Failed to update probability",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectBegin()
+				mock.ExpectExec("UPDATE challenges").WillReturnError(sql.ErrTxDone)
+				mock.ExpectRollback()
+			},
+			expectedError: "Failed to distribute prize pool",
+		},
+		{
+			name: "Failed to commit transaction",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectBegin()
+				mock.ExpectExec("UPDATE challenges").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit().WillReturnError(sql.ErrTxDone)
+				mock.ExpectRollback()
+			},
+			expectedError: "Failed to commit transaction",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setupMock(mock)
+
+			// Capture log output
+			var buf bytes.Buffer
+			log.SetOutput(&buf)
+			defer func() { log.SetOutput(os.Stderr) }()
+
+			object.CalculateChallengeResult(db, 1, 1, 0.5)
+
+			logOutput := buf.String()
+			assert.Contains(t, logOutput, tt.expectedError)
+
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("Unfulfilled expectations: %s", err)
+			}
+		})
+	}
 }

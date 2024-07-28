@@ -2,6 +2,7 @@ package databases
 
 import (
 	"database/sql"
+	"errors"
 	"testing"
 	"time"
 
@@ -118,7 +119,75 @@ func TestListReservation(t *testing.T) {
 }
 
 func TestListReservation_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Failed to create mock database: %v", err)
+	}
+	defer db.Close()
 
+	tests := []struct {
+		name        string
+		setupMock   func(mock sqlmock.Sqlmock)
+		roomID      int
+		startDate   time.Time
+		endDate     time.Time
+		limit       int
+		expectedErr string
+	}{
+		{
+			name: "Database query error",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT (.+) FROM Reservation R").WillReturnError(sql.ErrConnDone)
+			},
+			roomID:      1,
+			startDate:   time.Now(),
+			endDate:     time.Now().AddDate(0, 0, 7),
+			limit:       10,
+			expectedErr: "error querying database with ListReservation: sql: connection is already closed",
+		},
+		{
+			name: "Row scan error",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"ReservationID", "RoomID", "ReservationDate", "PlayerIDs"}).
+					AddRow("invalid", 1, time.Now(), "1,2,3") // ReservationID should be int, not string
+				mock.ExpectQuery("SELECT (.+) FROM Reservation R").WillReturnRows(rows)
+			},
+			roomID:      1,
+			startDate:   time.Now(),
+			endDate:     time.Now().AddDate(0, 0, 7),
+			limit:       10,
+			expectedErr: "error scanning row with ListReservation: sql: Scan error on column index 0, name \"ReservationID\": converting driver.Value type string (\"invalid\") to a int: invalid syntax",
+		},
+		{
+			name: "Rows iteration error",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{"ReservationID", "RoomID", "ReservationDate", "PlayerIDs"}).
+					AddRow(1, 1, time.Now(), "1,2,3").
+					RowError(0, errors.New("row iteration error"))
+				mock.ExpectQuery("SELECT (.+) FROM Reservation R").WillReturnRows(rows)
+			},
+			roomID:      1,
+			startDate:   time.Now(),
+			endDate:     time.Now().AddDate(0, 0, 7),
+			limit:       10,
+			expectedErr: "error iterating over rows with ListReservation: row iteration error",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setupMock(mock)
+
+			_, err := object.ListReservation(db, tt.roomID, tt.startDate, tt.endDate, tt.limit)
+
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), tt.expectedErr)
+
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("Unfulfilled expectations: %s", err)
+			}
+		})
+	}
 }
 
 func TestInsertReservation(t *testing.T) {

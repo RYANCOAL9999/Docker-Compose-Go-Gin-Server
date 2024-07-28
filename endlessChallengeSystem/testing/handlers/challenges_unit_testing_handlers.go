@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -53,7 +55,133 @@ func TestJoinChallenges(t *testing.T) {
 }
 
 func TestJoinChallenges_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Failed to create mock database: %v", err)
+	}
+	defer db.Close()
 
+	gin.SetMode(gin.TestMode)
+
+	tests := []struct {
+		name               string
+		setupMock          func(mock sqlmock.Sqlmock)
+		inputJSON          string
+		expectedStatusCode int
+		expectedErrorMsg   string
+	}{
+		{
+			name:               "Invalid JSON input",
+			setupMock:          func(mock sqlmock.Sqlmock) {},
+			inputJSON:          `{"playerID": "invalid"}`,
+			expectedStatusCode: http.StatusBadRequest,
+			expectedErrorMsg:   "json: cannot unmarshal string into Go struct field",
+		},
+		{
+			name: "GetLastChallengeTime error",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT").WillReturnError(sql.ErrConnDone)
+			},
+			inputJSON:          `{"playerID": 1, "amount": 100}`,
+			expectedStatusCode: http.StatusInternalServerError,
+			expectedErrorMsg:   "sql: connection is already closed",
+		},
+		{
+			name: "Too early for new challenge",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT").WillReturnRows(sqlmock.NewRows([]string{"last_challenge_time"}).AddRow(time.Now()))
+			},
+			inputJSON:          `{"playerID": 1, "amount": 100}`,
+			expectedStatusCode: http.StatusTooEarly,
+			expectedErrorMsg:   "You can only participate once per minute",
+		},
+		{
+			name: "Failed to start transaction",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT").WillReturnRows(sqlmock.NewRows([]string{"last_challenge_time"}).AddRow(time.Now().Add(-2 * time.Minute)))
+				mock.ExpectBegin().WillReturnError(sql.ErrConnDone)
+			},
+			inputJSON:          `{"playerID": 1, "amount": 100}`,
+			expectedStatusCode: http.StatusInternalServerError,
+			expectedErrorMsg:   "Failed to start transaction",
+		},
+		{
+			name: "Failed to add new challenge",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT").WillReturnRows(sqlmock.NewRows([]string{"last_challenge_time"}).AddRow(time.Now().Add(-2 * time.Minute)))
+				mock.ExpectBegin()
+				mock.ExpectExec("INSERT INTO").WillReturnError(sql.ErrTxDone)
+				mock.ExpectRollback()
+			},
+			inputJSON:          `{"playerID": 1, "amount": 100}`,
+			expectedStatusCode: http.StatusInternalServerError,
+			expectedErrorMsg:   "Failed to Add New Challenge",
+		},
+		{
+			name: "Failed to update price pool",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT").WillReturnRows(sqlmock.NewRows([]string{"last_challenge_time"}).AddRow(time.Now().Add(-2 * time.Minute)))
+				mock.ExpectBegin()
+				mock.ExpectExec("INSERT INTO").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectExec("UPDATE PrizePool").WillReturnError(sql.ErrTxDone)
+				mock.ExpectRollback()
+			},
+			inputJSON:          `{"playerID": 1, "amount": 100}`,
+			expectedStatusCode: http.StatusTooEarly,
+			expectedErrorMsg:   "Failed to update price pool",
+		},
+		{
+			name: "Failed to commit transaction",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT").WillReturnRows(sqlmock.NewRows([]string{"last_challenge_time"}).AddRow(time.Now().Add(-2 * time.Minute)))
+				mock.ExpectBegin()
+				mock.ExpectExec("INSERT INTO").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectExec("UPDATE PrizePool").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit().WillReturnError(sql.ErrTxDone)
+			},
+			inputJSON:          `{"playerID": 1, "amount": 100}`,
+			expectedStatusCode: http.StatusInternalServerError,
+			expectedErrorMsg:   "Failed to commit transaction",
+		},
+		{
+			name: "Failed to get challenge",
+			setupMock: func(mock sqlmock.Sqlmock) {
+				mock.ExpectQuery("SELECT").WillReturnRows(sqlmock.NewRows([]string{"last_challenge_time"}).AddRow(time.Now().Add(-2 * time.Minute)))
+				mock.ExpectBegin()
+				mock.ExpectExec("INSERT INTO").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectExec("UPDATE PrizePool").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+				mock.ExpectQuery("SELECT").WillReturnError(sql.ErrNoRows)
+			},
+			inputJSON:          `{"playerID": 1, "amount": 100}`,
+			expectedStatusCode: http.StatusInternalServerError,
+			expectedErrorMsg:   "sql: no rows in result set",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setupMock(mock)
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request, _ = http.NewRequest(http.MethodPost, "/join", strings.NewReader(tt.inputJSON))
+			c.Request.Header.Set("Content-Type", "application/json")
+
+			object.JoinChallenges(c, db)
+
+			assert.Equal(t, tt.expectedStatusCode, w.Code)
+
+			var response object_models.ErrorResponse
+			err := json.Unmarshal(w.Body.Bytes(), &response)
+			assert.NoError(t, err)
+			assert.Contains(t, response.Error, tt.expectedErrorMsg)
+
+			if err := mock.ExpectationsWereMet(); err != nil {
+				t.Errorf("Unfulfilled expectations: %s", err)
+			}
+		})
+	}
 }
 
 func TestShowChallenges(t *testing.T) {

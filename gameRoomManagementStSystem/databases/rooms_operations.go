@@ -126,7 +126,10 @@ func DeleteRoom(db *sql.DB, id int) error {
 	if err != nil {
 		return fmt.Errorf("error querying database with DeleteRoom: %w", err)
 	}
-	rowsAffected, _ := result.RowsAffected()
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error getting affected rows: %w", err)
+	}
 	if rowsAffected == 0 {
 		return fmt.Errorf("room not found")
 	}

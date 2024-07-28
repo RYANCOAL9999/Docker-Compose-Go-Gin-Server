@@ -1,6 +1,7 @@
 package databases
 
 import (
+	"database/sql"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -34,6 +35,26 @@ func TestGetLevelsData(t *testing.T) {
 	}
 }
 
+func TestGetLevelsData_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Error creating mock database: %v", err)
+	}
+	defer db.Close()
+
+	mock.ExpectQuery("SELECT ID, Name, LV FROM Level").WillReturnError(sql.ErrConnDone)
+
+	levels, err := object.GetLevelsData(db)
+
+	assert.Error(t, err)
+	assert.Nil(t, levels)
+	assert.Contains(t, err.Error(), "error querying database with GetLevelsData")
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("Unfulfilled expectations: %s", err)
+	}
+}
+
 func TestAddLevel(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -49,6 +70,28 @@ func TestAddLevel(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, 3, id)
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("Unfulfilled expectations: %s", err)
+	}
+}
+
+func TestAddLevel_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Error creating mock database: %v", err)
+	}
+	defer db.Close()
+
+	mock.ExpectExec("INSERT INTO Level").
+		WithArgs("Intermediate", 5).
+		WillReturnError(sql.ErrTxDone)
+
+	id, err := object.AddLevel(db, "Intermediate", 5)
+
+	assert.Error(t, err)
+	assert.Equal(t, 0, id)
+	assert.Contains(t, err.Error(), "error querying database with AddLevel")
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("Unfulfilled expectations: %s", err)

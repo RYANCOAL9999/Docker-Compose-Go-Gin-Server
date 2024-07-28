@@ -42,6 +42,10 @@ func TestGetLevels(t *testing.T) {
 	assert.Equal(t, object_models.Level{ID: 2, Name: "Expert", LV: 10}, response[1])
 }
 
+func TestGetLevels_Error(t *testing.T) {
+
+}
+
 func TestCreateLevel(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -69,4 +73,8 @@ func TestCreateLevel(t *testing.T) {
 	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 	assert.Equal(t, 3, response.ID)
+}
+
+func TestCreateLevel_Error(t *testing.T) {
+
 }

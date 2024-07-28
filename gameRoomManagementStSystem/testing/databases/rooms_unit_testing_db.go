@@ -45,6 +45,26 @@ func TestListRooms(t *testing.T) {
 	}
 }
 
+func TestListRooms_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Error creating mock database: %v", err)
+	}
+	defer db.Close()
+
+	mock.ExpectQuery("SELECT ID, Name, Status FROM Room").WillReturnError(sqlmock.ErrCancelled)
+
+	rooms, err := object.ListRooms(db)
+
+	assert.Error(t, err)
+	assert.Nil(t, rooms)
+	assert.Contains(t, err.Error(), "error querying database with ListRooms")
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("Unfulfilled expectations: %s", err)
+	}
+}
+
 func TestShowRoom(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -97,6 +117,28 @@ func TestShowRoom(t *testing.T) {
 				t.Errorf("Unfulfilled expectations: %s", err)
 			}
 		})
+	}
+}
+
+func TestShowRoom_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Error creating mock database: %v", err)
+	}
+	defer db.Close()
+
+	mock.ExpectQuery("SELECT ID, Name, Status FROM Room WHERE ID = ?").
+		WithArgs(1).
+		WillReturnError(sql.ErrConnDone)
+
+	room, err := object.ShowRoom(db, 1)
+
+	assert.Error(t, err)
+	assert.Nil(t, room)
+	assert.Contains(t, err.Error(), "error scanning row with Show Room")
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("Unfulfilled expectations: %s", err)
 	}
 }
 
@@ -286,6 +328,9 @@ func TestUpdateRoomData(t *testing.T) {
 			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
+}
+
+func TestUpdateRoomData_Error(t *testing.T) {
 
 }
 
@@ -352,6 +397,10 @@ func TestDeleteRoom(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDeleteRoom_Error(t *testing.T) {
+
 }
 
 func TestSearchPlayerInRoom(t *testing.T) {

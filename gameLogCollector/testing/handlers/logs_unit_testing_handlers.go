@@ -47,6 +47,10 @@ func TestGetLogs(t *testing.T) {
 	assert.Equal(t, "LOGIN", response.Action)
 }
 
+func TestGetLogs_Error(t *testing.T) {
+
+}
+
 func TestCreateLog(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -81,4 +85,8 @@ func TestCreateLog(t *testing.T) {
 	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, response.ID)
+}
+
+func TestCreateLog_Error(t *testing.T) {
+
 }

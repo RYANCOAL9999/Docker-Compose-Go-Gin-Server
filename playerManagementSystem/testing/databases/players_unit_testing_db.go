@@ -35,6 +35,10 @@ func TestGetPlayersData(t *testing.T) {
 	}
 }
 
+func TestGetPlayersData_Error(t *testing.T) {
+
+}
+
 func TestAddPlayer(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -54,6 +58,10 @@ func TestAddPlayer(t *testing.T) {
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("Unfulfilled expectations: %s", err)
 	}
+}
+
+func TestAddPlayer_Error(t *testing.T) {
+
 }
 
 func TestGetPlayer(t *testing.T) {
@@ -81,6 +89,10 @@ func TestGetPlayer(t *testing.T) {
 	}
 }
 
+func TestGetPlayer_Error(t *testing.T) {
+
+}
+
 func TestUpdatePlayer(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -105,6 +117,10 @@ func TestUpdatePlayer(t *testing.T) {
 	}
 }
 
+func TestUpdatePlayer_Error(t *testing.T) {
+
+}
+
 func TestDeletePlayer(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -123,4 +139,8 @@ func TestDeletePlayer(t *testing.T) {
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("Unfulfilled expectations: %s", err)
 	}
+}
+
+func TestDeletePlayer_Error(t *testing.T) {
+
 }

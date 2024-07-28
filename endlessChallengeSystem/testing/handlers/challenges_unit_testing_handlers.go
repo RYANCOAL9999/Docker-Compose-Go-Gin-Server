@@ -52,6 +52,10 @@ func TestJoinChallenges(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestJoinChallenges_Error(t *testing.T) {
+
+}
+
 func TestShowChallenges(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -85,6 +89,10 @@ func TestShowChallenges(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestShowChallenges_Error(t *testing.T) {
+
+}
+
 func TestCalculateChallengeResult(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -103,4 +111,8 @@ func TestCalculateChallengeResult(t *testing.T) {
 	time.Sleep(35 * time.Second) // Wait for the goroutine to complete
 
 	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestCalculateChallengeResult_Error(t *testing.T) {
+
 }

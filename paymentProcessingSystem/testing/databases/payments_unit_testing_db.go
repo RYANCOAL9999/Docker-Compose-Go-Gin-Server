@@ -42,6 +42,10 @@ func TestGetPayment(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestGetPayment_Error(t *testing.T) {
+
+}
+
 func TestAddPayment(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -69,4 +73,8 @@ func TestAddPayment(t *testing.T) {
 	assert.Equal(t, 1, id)
 
 	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestAddPayment_Error(t *testing.T) {
+
 }

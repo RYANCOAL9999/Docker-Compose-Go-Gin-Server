@@ -36,6 +36,10 @@ func TestListLogs(t *testing.T) {
 	}
 }
 
+func TestListLogs_Error(t *testing.T) {
+
+}
+
 func TestAddLog(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -65,4 +69,8 @@ func TestAddLog(t *testing.T) {
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("Unfulfilled expectations: %v", err)
 	}
+}
+
+func TestAddLog_Error(t *testing.T) {
+
 }

@@ -32,6 +32,10 @@ func TestListChallenges(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestListChallenges_Error(t *testing.T) {
+
+}
+
 func TestGetLastChallengeTime(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -49,6 +53,10 @@ func TestGetLastChallengeTime(t *testing.T) {
 	assert.Equal(t, expectedTime, *lastTime)
 
 	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestGetLastChallengeTime_Error(t *testing.T) {
+
 }
 
 func TestAddNewChallenge(t *testing.T) {
@@ -69,6 +77,10 @@ func TestAddNewChallenge(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestAddNewChallenge_Error(t *testing.T) {
+
+}
+
 func TestUpdatePricePool(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -84,6 +96,10 @@ func TestUpdatePricePool(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestUpdatePricePool_Error(t *testing.T) {
+
 }
 
 func TestDistributePrizePool(t *testing.T) {
@@ -103,4 +119,8 @@ func TestDistributePrizePool(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestDistributePrizePool_Error(t *testing.T) {
+
 }

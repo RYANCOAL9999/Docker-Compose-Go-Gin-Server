@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -43,6 +44,29 @@ func TestGetPlayers(t *testing.T) {
 	assert.Equal(t, object_models.PlayerRank{ID: 2, Name: "Bob", LV: 10}, response[1])
 }
 
+func TestGetPlayers_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Error creating mock database: %v", err)
+	}
+	defer db.Close()
+
+	mock.ExpectQuery("SELECT P.ID as ID, P.Name as Name, L.LV as LV FROM Player P").
+		WillReturnError(sql.ErrConnDone)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	object.GetPlayers(c, db)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+
+	var response object_models.ErrorResponse
+	err = json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Contains(t, response.Error, "error querying database")
+}
+
 func TestCreatePlayer(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -72,6 +96,37 @@ func TestCreatePlayer(t *testing.T) {
 	assert.Equal(t, 3, response.ID)
 }
 
+func TestCreatePlayer_InvalidInput(t *testing.T) {
+	db, _, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Error creating mock database: %v", err)
+	}
+	defer db.Close()
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	invalidPlayer := struct {
+		Name string `json:"name"`
+		LV   string `json:"lv"` // Invalid type, should be int
+	}{
+		Name: "Charlie",
+		LV:   "not_a_number",
+	}
+	body, _ := json.Marshal(invalidPlayer)
+	c.Request, _ = http.NewRequest("POST", "/players", bytes.NewBuffer(body))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	object.CreatePlayer(c, db)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	var response object_models.ErrorResponse
+	err = json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Contains(t, response.Error, "invalid")
+}
+
 func TestGetPlayer(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -98,6 +153,10 @@ func TestGetPlayer(t *testing.T) {
 	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 	assert.Equal(t, object_models.PlayerRank{ID: 1, Name: "Alice", LV: 5}, response)
+}
+
+func TestGetPlayer_Error(t *testing.T) {
+
 }
 
 func TestUpdatePlayer(t *testing.T) {
@@ -132,6 +191,10 @@ func TestUpdatePlayer(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestUpdatePlayer_Error(t *testing.T) {
+
+}
+
 func TestDeletePlayer(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -154,4 +217,8 @@ func TestDeletePlayer(t *testing.T) {
 	var response object_models.SuccessResponse
 	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
+}
+
+func TestDeletePlayer_Error(t *testing.T) {
+
 }

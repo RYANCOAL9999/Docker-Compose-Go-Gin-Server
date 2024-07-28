@@ -2,9 +2,12 @@ package handlers
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -40,10 +43,24 @@ func TestGetRooms(t *testing.T) {
 	assert.Len(t, response, 2)
 	assert.Equal(t, "Room 1", response[0].Name)
 	assert.Equal(t, "Room 2", response[1].Name)
-
 }
 
-func TestGetRoom(t *testing.T) {
+func TestGetRooms_Error(t *testing.T) {
+	db, mock, _ := sqlmock.New()
+	defer db.Close()
+
+	mock.ExpectQuery("SELECT (.+) FROM rooms").WillReturnError(errors.New("database error"))
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	object.GetRooms(c, db)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Contains(t, w.Body.String(), "database error")
+}
+
+func TestCreateRoom(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("An error '%s' was not expected when opening a stub database connection", err)
@@ -68,10 +85,55 @@ func TestGetRoom(t *testing.T) {
 	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, response.ID)
-
 }
 
-func TestUpdateRoom(t *testing.T) {
+func TestCreateRoom_Error(t *testing.T) {
+	tests := []struct {
+		name           string
+		inputJSON      string
+		mockSetup      func(sqlmock.Sqlmock)
+		expectedStatus int
+		expectedBody   string
+	}{
+		{
+			name:           "Invalid JSON",
+			inputJSON:      `{"name": 123, "description": "test"}`,
+			mockSetup:      func(mock sqlmock.Sqlmock) {},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   `{"error":"json: cannot unmarshal number into Go struct field Room.name of type string"}`,
+		},
+		{
+			name:      "Database Error",
+			inputJSON: `{"name": "Test Room", "description": "A test room"}`,
+			mockSetup: func(mock sqlmock.Sqlmock) {
+				mock.ExpectExec("INSERT INTO rooms").WillReturnError(errors.New("database error"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody:   `{"error":"database error"}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, mock, _ := sqlmock.New()
+			defer db.Close()
+
+			tt.mockSetup(mock)
+
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request, _ = http.NewRequest("POST", "/rooms", strings.NewReader(tt.inputJSON))
+			c.Request.Header.Set("Content-Type", "application/json")
+
+			object.CreateRoom(c, db)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			assert.JSONEq(t, tt.expectedBody, w.Body.String())
+		})
+	}
+}
+
+func TestGetRoom(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("An error '%s' was not expected when opening a stub database connection", err)
@@ -95,6 +157,29 @@ func TestUpdateRoom(t *testing.T) {
 	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 	assert.Equal(t, "Room 1", response.Name)
+}
+
+func TestGetRoom_Error(t *testing.T) {
+	db, mock, _ := sqlmock.New()
+	defer db.Close()
+
+	mock.ExpectQuery("SELECT (.+) FROM rooms WHERE (.+)").WillReturnError(sql.ErrNoRows)
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Params = gin.Params{{Key: "id", Value: "1"}}
+
+	object.GetRoom(c, db)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Contains(t, w.Body.String(), "sql: no rows in result set")
+}
+
+func TestUpdateRoom(t *testing.T) {
+
+}
+
+func TestUpdateRoom_Error(t *testing.T) {
 
 }
 
@@ -122,5 +207,20 @@ func TestDeleteRoom(t *testing.T) {
 	var response object_models.SuccessResponse
 	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
+}
 
+func TestDeleteRoom_Error(t *testing.T) {
+	db, mock, _ := sqlmock.New()
+	defer db.Close()
+
+	mock.ExpectExec("DELETE FROM rooms WHERE (.+)").WillReturnError(errors.New("database error"))
+
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Params = gin.Params{{Key: "id", Value: "1"}}
+
+	object.DeleteRoom(c, db)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Contains(t, w.Body.String(), "database error")
 }

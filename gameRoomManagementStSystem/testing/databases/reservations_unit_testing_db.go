@@ -1,6 +1,7 @@
 package databases
 
 import (
+	"database/sql"
 	"testing"
 	"time"
 
@@ -116,6 +117,10 @@ func TestListReservation(t *testing.T) {
 	}
 }
 
+func TestListReservation_Error(t *testing.T) {
+
+}
+
 func TestInsertReservation(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -134,6 +139,30 @@ func TestInsertReservation(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, 1, id)
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("Unfulfilled expectations: %s", err)
+	}
+}
+
+func TestInsertReservation_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Error creating mock database: %v", err)
+	}
+	defer db.Close()
+
+	roomID := 101
+	reservationDate := time.Now()
+
+	mock.ExpectExec("INSERT INTO Reservation").
+		WithArgs(roomID, reservationDate).
+		WillReturnError(sql.ErrConnDone)
+
+	_, err = object.InsertReservation(db, roomID, reservationDate)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "error querying database with InsertReservation")
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("Unfulfilled expectations: %s", err)

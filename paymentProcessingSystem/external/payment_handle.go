@@ -10,23 +10,22 @@ import (
 	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/paymentProcessingSystem/models"
 )
 
-const paymentGatewayURL = "https://api.paymentgateway.com/payment"
+func MakePayment(paymentReq interface{}, url string) (*models.PaymentResponse, error) {
 
-func MakePayment(paymentReq models.PaymentRequest) (*models.PaymentResponse, error) {
-	// 將支付請求轉換為JSON
+	// Convert the transfer request to JSON
 	requestBody, err := json.Marshal(paymentReq)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal payment request: %v", err)
+		return nil, fmt.Errorf("failed to marshal transfer request: %v", err)
 	}
 
-	// 創建HTTP請求
-	req, err := http.NewRequest("POST", paymentGatewayURL, bytes.NewBuffer(requestBody))
+	// Create HTTP request
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new request: %v", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	// 發送HTTP請求
+	//Send HTTP request
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -34,30 +33,30 @@ func MakePayment(paymentReq models.PaymentRequest) (*models.PaymentResponse, err
 	}
 	defer resp.Body.Close()
 
-	// 檢查HTTP響應狀態
+	// Check HTTP response status
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("payment gateway returned non-OK status: %v", resp.Status)
+		return nil, fmt.Errorf("transfer service returned non-OK status: %v", resp.Status)
 	}
 
-	// 解析響應
-	var paymentResp models.PaymentResponse
-	if err := json.NewDecoder(resp.Body).Decode(&paymentResp); err != nil {
-		return nil, fmt.Errorf("failed to decode payment response: %v", err)
+	// 解析响应
+	var transferResp models.PaymentResponse
+	if err := json.NewDecoder(resp.Body).Decode(&transferResp); err != nil {
+		return nil, fmt.Errorf("failed to decode transfer response: %v", err)
 	}
 
-	return &paymentResp, nil
+	return &transferResp, nil
 }
 
-func CheckPaymentStatus(transactionID string) (*models.PaymentResponse, error) {
-	statusURL := fmt.Sprintf("%s/status/%s", paymentGatewayURL, transactionID)
+func CheckPaymentStatus(transactionID string, url string) (*models.PaymentResponse, error) {
+	statusURL := fmt.Sprintf("%s/status/%s", url, transactionID)
 
-	// 创建HTTP请求
+	// Create HTTP request
 	req, err := http.NewRequest("GET", statusURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new request: %v", err)
 	}
 
-	// 发送HTTP请求
+	// Send HTTP request
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -65,12 +64,12 @@ func CheckPaymentStatus(transactionID string) (*models.PaymentResponse, error) {
 	}
 	defer resp.Body.Close()
 
-	// 检查HTTP响应状态
+	// Check HTTP response status
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("payment service returned non-OK status: %v", resp.Status)
 	}
 
-	// 解析响应
+	// Parse response
 	var statusResp models.PaymentResponse
 	if err := json.NewDecoder(resp.Body).Decode(&statusResp); err != nil {
 		return nil, fmt.Errorf("failed to decode status response: %v", err)

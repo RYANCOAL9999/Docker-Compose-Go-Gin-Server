@@ -13,6 +13,9 @@ import (
 )
 
 func MakeCreditCardPayment(payment models.Payment) *models.PaymentResponse {
+
+	var url string = "https://api.paymentgateway.com/payment"
+
 	paymentReq := models.PaymentRequest{
 		Amount:         payment.Amount,
 		CardNumber:     payment.Describle.CardNumber,
@@ -21,7 +24,8 @@ func MakeCreditCardPayment(payment models.Payment) *models.PaymentResponse {
 		Currency:       payment.Describle.Currency,
 	}
 
-	paymentResp, err := external.MakePayment(paymentReq)
+	// Create payment request
+	paymentResp, err := external.MakePayment(paymentReq, url)
 	if err != nil {
 		fmt.Printf("Payment failed: %v\n", err)
 		return nil
@@ -30,6 +34,9 @@ func MakeCreditCardPayment(payment models.Payment) *models.PaymentResponse {
 }
 
 func MakeBankTransfer(payment models.Payment) *models.PaymentResponse {
+
+	const url string = "https://api.bank.com/transfer"
+
 	paymentReq := models.TransferRequest{
 		SenderAccount:   payment.Describle.Sender,
 		ReceiverAccount: payment.Describle.Receiver,
@@ -38,7 +45,8 @@ func MakeBankTransfer(payment models.Payment) *models.PaymentResponse {
 		Description:     payment.Describle.Description,
 	}
 
-	paymentResp, err := external.MakeTransfer(paymentReq)
+	// Create payment request
+	paymentResp, err := external.MakePayment(paymentReq, url)
 	if err != nil {
 		fmt.Printf("Payment failed: %v\n", err)
 		return nil
@@ -47,6 +55,9 @@ func MakeBankTransfer(payment models.Payment) *models.PaymentResponse {
 }
 
 func MakeThirdPartyPayment(payment models.Payment) *models.PaymentResponse {
+
+	const url string = "https://api.thirdParty.com/payment"
+
 	paymentReq := models.PaymentRequest{
 		Amount:         payment.Amount,
 		CardNumber:     payment.Describle.CardNumber,
@@ -56,8 +67,8 @@ func MakeThirdPartyPayment(payment models.Payment) *models.PaymentResponse {
 		Description:    payment.Describle.Description,
 	}
 
-	// 创建支付请求
-	paymentResp, err := external.MakePayment(paymentReq)
+	// Create payment request
+	paymentResp, err := external.MakePayment(paymentReq, url)
 	if err != nil {
 		fmt.Printf("Payment failed: %v\n", err)
 		return nil
@@ -65,8 +76,8 @@ func MakeThirdPartyPayment(payment models.Payment) *models.PaymentResponse {
 
 	fmt.Printf("Payment successful: %+v\n", paymentResp)
 
-	// 查询支付状态
-	statusResp, err := external.CheckPaymentStatus(paymentResp.TransactionID)
+	// Query payment status
+	statusResp, err := external.CheckPaymentStatus(paymentResp.TransactionID, url)
 	if err != nil {
 		fmt.Printf("Check payment status failed: %v\n", err)
 		return nil
@@ -76,6 +87,8 @@ func MakeThirdPartyPayment(payment models.Payment) *models.PaymentResponse {
 
 func MakeBlockchainPayment(payment models.Payment) *models.PaymentResponse {
 
+	var url string = "https://api.blockchainplatform.com/transaction"
+
 	paymentReq := models.BlockchainPaymentRequest{
 		SenderAddress:   payment.Describle.Sender,
 		ReceiverAddress: payment.Describle.Receiver,
@@ -84,8 +97,8 @@ func MakeBlockchainPayment(payment models.Payment) *models.PaymentResponse {
 		PrivateKey:      payment.Describle.Key,
 	}
 
-	// 创建支付请求
-	paymentResp, err := external.MakeBlockchainPayment(paymentReq)
+	// Create payment request
+	paymentResp, err := external.MakePayment(paymentReq, url)
 	if err != nil {
 		fmt.Printf("Blockchain payment failed: %v\n", err)
 		return nil
@@ -93,14 +106,13 @@ func MakeBlockchainPayment(payment models.Payment) *models.PaymentResponse {
 
 	fmt.Printf("Blockchain payment successful: %+v\n", paymentResp)
 
-	// 查询支付状态
-	statusResp, err := external.CheckBlockchainPaymentStatus(paymentResp.TransactionID)
+	// check payment status
+	statusResp, err := external.CheckPaymentStatus(paymentResp.TransactionID, url)
 	if err != nil {
 		fmt.Printf("Check blockchain payment status failed: %v\n", err)
 		return nil
 	}
 	return statusResp
-
 }
 
 // @Summary      Retrieve a payment by ID

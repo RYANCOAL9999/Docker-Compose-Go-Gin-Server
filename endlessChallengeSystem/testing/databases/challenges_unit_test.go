@@ -13,7 +13,6 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	object "github.com/RYANCOAL9999/SpinnrTechnologyInterview/endlessChallengeSystem/databases"
-	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/endlessChallengeSystem/models"
 	object_models "github.com/RYANCOAL9999/SpinnrTechnologyInterview/endlessChallengeSystem/models"
 	"github.com/stretchr/testify/assert"
 )
@@ -34,7 +33,7 @@ func TestListChallenges(t *testing.T) {
 	challenges, err := object.ListChallenges(db, 0)
 	assert.NoError(t, err)
 	assert.Len(t, challenges, 2)
-	assert.Equal(t, int64(1), challenges[0].ID)
+	assert.Equal(t, int(1), challenges[0].ID)
 	assert.Equal(t, "1001", challenges[0].PlayerID)
 
 	assert.NoError(t, mock.ExpectationsWereMet())
@@ -203,7 +202,7 @@ func TestAddNewChallenge_Error(t *testing.T) {
 		PlayerID: 1,
 		Amount:   100,
 	}
-	status := models.Status(1)
+	status := object_models.Status(1)
 	probability := 0.5
 
 	mock.ExpectExec("INSERT INTO Challenge").
@@ -339,7 +338,7 @@ func TestUpdateProbability(t *testing.T) {
 	challengeID := 1
 	playerID := 1
 	probability := 0.75
-	status := models.Status(1)
+	status := object_models.Status(1)
 
 	mock.ExpectExec("UPDATE Challenge").
 		WithArgs(probability, int(status), challengeID, playerID).
@@ -361,7 +360,7 @@ func TestUpdateProbability_Error(t *testing.T) {
 	challengeID := 999
 	playerID := 888
 	probability := 0.5
-	status := models.Ready
+	status := object_models.Ready
 
 	// Assertion
 	var logOutput bytes.Buffer

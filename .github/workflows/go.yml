@@ -1,0 +1,104 @@
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: CI/CD Pipeline GO System For Spinnr Technology Interview Coding Test
+
+on:
+  push:
+    branches: [ "integration_testing" ]
+  pull_request:
+    branches: [ "integration_testing" ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.20'
+
+    - name: Install dependencies for endlessChallengeSystem
+      working-directory: ./endlessChallengeSystem
+      run: |
+        go mod tidy
+        go mod download
+
+    - name: test endlessChallengeSystem
+      working-directory: ./endlessChallengeSystem
+      run: |
+        go test -v ./...
+
+    # - name: Build endlessChallengeSystem
+    #   working-directory: ./endlessChallengeSystem
+    #   run: |
+    #     go build -v ./...
+
+    - name: Install dependencies for gameLogCollector
+      working-directory: ./gameLogCollector
+      run: |
+        go mod tidy
+        go mod download
+
+    - name: test gameLogCollector
+      working-directory: ./gameLogCollector
+      run: |
+        go test -v ./...
+
+    # - name: Build gameLogCollector
+    #   working-directory: ./gameLogCollector
+    #   run: |
+    #     go build -v ./...
+
+    - name: Install dependencies for playerManagementSystem
+      working-directory: ./playerManagementSystem
+      run: |
+        go mod tidy
+        go mod download
+
+    - name: test playerManagementSystem
+      working-directory: ./playerManagementSystem
+      run: |
+        go test -v ./...
+
+    # - name: Build playerManagementSystem
+    #   working-directory: ./playerManagementSystem
+    #   run: |
+    #     go build -v ./...
+
+    - name: Install dependencies for paymentProcessingSystem
+      working-directory: ./paymentProcessingSystem
+      run: |
+        go mod tidy
+        go mod download
+
+    - name: test paymentProcessingSystem
+      working-directory: ./paymentProcessingSystem
+      run: |
+        go test -v ./...
+
+    # - name: Build paymentProcessingSystem
+    #   working-directory: ./paymentProcessingSystem
+    #   run: |
+    #     go build -v ./...
+
+    - name: Install dependencies for gameRoomManagementSystem
+      working-directory: ./gameRoomManagementSystem
+      run: |
+        go mod tidy
+        go mod download
+
+    - name: test gameRoomManagementSystem
+      working-directory: ./gameRoomManagementSystem
+      run: |
+        go test -v ./...
+
+    # - name: Build gameRoomManagementSystem
+    #   working-directory: ./gameRoomManagementSystem
+    #   run: |
+    #     go build -v ./...

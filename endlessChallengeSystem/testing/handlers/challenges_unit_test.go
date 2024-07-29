@@ -301,7 +301,7 @@ func TestCalculateChallengeResult(t *testing.T) {
 	probability := 0.5
 
 	mock.ExpectBegin()
-	mock.ExpectExec("UPDATE challenges SET").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("UPDATE Challenge SET").WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
 	object.CalculateChallengeResult(db, challengeID, playerID, probability)

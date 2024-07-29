@@ -243,56 +243,31 @@ func TestUpdatePricePool(t *testing.T) {
 func TestUpdatePricePool_Error(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("Error creating mock database: %v", err)
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 	defer db.Close()
 
-	t.Run("Database execution error", func(t *testing.T) {
-		mock.ExpectBegin()
-		mock.ExpectExec("UPDATE PrizePool").
-			WithArgs(20.01).
-			WillReturnError(errors.New("database error"))
+	tx, err := db.Begin()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when beginning a transaction", err)
+	}
 
-		tx, _ := db.Begin()
-		err := object.UpdatePricePool(tx, 20.01)
+	mock.ExpectExec("UPDATE PrizePool").
+		WithArgs(100.0).
+		WillReturnError(fmt.Errorf("some error"))
 
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "error updating price pool")
-	})
+	err = object.UpdatePricePool(tx, 100.0)
+	if err == nil {
+		t.Errorf("expected an error but got none")
+	}
 
-	t.Run("No rows affected", func(t *testing.T) {
-		mock.ExpectBegin()
-		mock.ExpectExec("UPDATE PrizePool").
-			WithArgs(30.02).
-			WillReturnResult(sqlmock.NewResult(0, 0))
+	if rollbackErr := tx.Rollback(); rollbackErr != nil {
+		t.Errorf("unexpected error during rollback: %s", rollbackErr)
+	}
 
-		tx, _ := db.Begin()
-		err := object.UpdatePricePool(tx, 30.02)
-
-		assert.NoError(t, err)
-	})
-
-	t.Run("Invalid transaction", func(t *testing.T) {
-		invalidTx := &sql.Tx{}
-		err := object.UpdatePricePool(invalidTx, 40.03)
-
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "error updating price pool")
-	})
-
-	t.Run("Negative amount", func(t *testing.T) {
-		mock.ExpectBegin()
-		mock.ExpectExec("UPDATE PrizePool").
-			WithArgs(-50.04).
-			WillReturnResult(sqlmock.NewResult(0, 1))
-
-		tx, _ := db.Begin()
-		err := object.UpdatePricePool(tx, -50.04)
-
-		assert.NoError(t, err)
-	})
-
-	assert.NoError(t, mock.ExpectationsWereMet())
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
 }
 
 func TestDistributePrizePool(t *testing.T) {

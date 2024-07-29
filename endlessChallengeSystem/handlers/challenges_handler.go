@@ -32,7 +32,20 @@ func CalculateChallengeResult(db *sql.DB, challengeID int, playerID int, probabi
 		log.Printf("Failed to start transaction: %v", err)
 		return
 	}
-	defer tx.Rollback()
+	// defer tx.Rollback()
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback()
+			panic(p) // Re-throw panic after rollback
+		} else if err != nil {
+			tx.Rollback() // Rollback on error
+		} else {
+			err = tx.Commit() // Commit on success
+			if err != nil {
+				log.Printf("Failed to commit transaction: %v", err)
+			}
+		}
+	}()
 
 	if won {
 		err = databases.DistributePrizePool(tx, challengeID, playerID, joined)
@@ -99,7 +112,20 @@ func JoinChallenges(c *gin.Context, db *sql.DB) {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to start transaction"})
 		return
 	}
-	defer tx.Rollback()
+	// defer tx.Rollback()
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback()
+			panic(p) // Re-throw panic after rollback
+		} else if err != nil {
+			tx.Rollback() // Rollback on error
+		} else {
+			err = tx.Commit() // Commit on success
+			if err != nil {
+				log.Printf("Failed to commit transaction: %v", err)
+			}
+		}
+	}()
 
 	lastChallengeID, err := databases.AddNewChallenge(tx, newChallengeNeed, status, probability)
 	if err != nil {

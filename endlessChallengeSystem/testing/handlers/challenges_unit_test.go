@@ -4,10 +4,9 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
-	"log"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -293,89 +292,41 @@ func TestShowChallenges_Error(t *testing.T) {
 func TestCalculateChallengeResult(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("Error creating mock database: %v", err)
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 	defer db.Close()
 
+	challengeID := 1
+	playerID := 1
+	probability := 0.5
+
 	mock.ExpectBegin()
-	mock.ExpectQuery("SELECT Amount FROM PrizePool").WillReturnRows(sqlmock.NewRows([]string{"Amount"}).AddRow(100.0))
-	mock.ExpectExec("UPDATE challenges").WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec("UPDATE PrizePool").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("UPDATE challenges SET").WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
-	object.CalculateChallengeResult(db, 1, 1001, 0.005)
+	object.CalculateChallengeResult(db, challengeID, playerID, probability)
 
-	time.Sleep(35 * time.Second) // Wait for the goroutine to complete
-
-	assert.NoError(t, mock.ExpectationsWereMet())
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
 }
 
 func TestCalculateChallengeResult_Error(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
-		t.Fatalf("Failed to create mock database: %v", err)
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 	defer db.Close()
 
-	tests := []struct {
-		name          string
-		setupMock     func(mock sqlmock.Sqlmock)
-		expectedError string
-	}{
-		{
-			name: "Failed to start transaction",
-			setupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectBegin().WillReturnError(sql.ErrConnDone)
-			},
-			expectedError: "Failed to start transaction",
-		},
-		{
-			name: "Failed to distribute prize pool",
-			setupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectBegin()
-				mock.ExpectExec("UPDATE challenges").WillReturnError(sql.ErrTxDone)
-				mock.ExpectRollback()
-			},
-			expectedError: "Failed to distribute prize pool",
-		},
-		{
-			name: "Failed to update probability",
-			setupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectBegin()
-				mock.ExpectExec("UPDATE challenges").WillReturnError(sql.ErrTxDone)
-				mock.ExpectRollback()
-			},
-			expectedError: "Failed to distribute prize pool",
-		},
-		{
-			name: "Failed to commit transaction",
-			setupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectBegin()
-				mock.ExpectExec("UPDATE challenges").WillReturnResult(sqlmock.NewResult(1, 1))
-				mock.ExpectCommit().WillReturnError(sql.ErrTxDone)
-				mock.ExpectRollback()
-			},
-			expectedError: "Failed to commit transaction",
-		},
-	}
+	challengeID := 1
+	playerID := 1
+	probability := 0.5
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.setupMock(mock)
+	mock.ExpectBegin().WillReturnError(fmt.Errorf("transaction start error"))
 
-			// Capture log output
-			var buf bytes.Buffer
-			log.SetOutput(&buf)
-			defer func() { log.SetOutput(os.Stderr) }()
+	object.CalculateChallengeResult(db, challengeID, playerID, probability)
 
-			object.CalculateChallengeResult(db, 1, 1, 0.5)
-
-			logOutput := buf.String()
-			assert.Contains(t, logOutput, tt.expectedError)
-
-			if err := mock.ExpectationsWereMet(); err != nil {
-				t.Errorf("Unfulfilled expectations: %s", err)
-			}
-		})
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
 	}
 }

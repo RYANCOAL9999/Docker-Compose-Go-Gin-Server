@@ -3,7 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"log"
-	"math/rand/v2"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"time"

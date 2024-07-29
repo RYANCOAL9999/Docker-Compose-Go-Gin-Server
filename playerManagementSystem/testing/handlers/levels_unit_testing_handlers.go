@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	object "github.com/RYANCOAL9999/SpinnrTechnologyInterview/playerManagementSystem/handlers"
+	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/playerManagementSystem/models"
 	object_models "github.com/RYANCOAL9999/SpinnrTechnologyInterview/playerManagementSystem/models"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -43,6 +45,23 @@ func TestGetLevels(t *testing.T) {
 }
 
 func TestGetLevels_Error(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.Default()
+	db := &sql.DB{}
+
+	router.GET("/levels", func(c *gin.Context) {
+		object.GetLevels(c, db)
+	})
+
+	req, _ := http.NewRequest(http.MethodGet, "/levels", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	var response models.ErrorResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.Equal(t, "database connection error", response.Error)
 
 }
 
@@ -76,5 +95,16 @@ func TestCreateLevel(t *testing.T) {
 }
 
 func TestCreateLevel_Error(t *testing.T) {
-
+	gin.SetMode(gin.TestMode)
+	router := gin.Default()
+	db := &sql.DB{}
+	router.POST("/levels", func(c *gin.Context) {
+		object.CreateLevel(c, db)
+	})
+	invalidJSON := `{"Name": "Test Level", "LV": "invalid"}`
+	req, _ := http.NewRequest(http.MethodPost, "/levels", bytes.NewBufferString(invalidJSON))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 }

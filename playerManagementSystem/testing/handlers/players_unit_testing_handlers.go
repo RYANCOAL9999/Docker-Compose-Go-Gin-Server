@@ -156,7 +156,20 @@ func TestGetPlayer(t *testing.T) {
 }
 
 func TestGetPlayer_Error(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.Default()
+	db, _, _ := sqlmock.New()
+	defer db.Close()
 
+	router.GET("/player/:id", func(c *gin.Context) {
+		object.GetPlayer(c, db)
+	})
+
+	req, _ := http.NewRequest(http.MethodGet, "/player/abc", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
 func TestUpdatePlayer(t *testing.T) {
@@ -192,7 +205,21 @@ func TestUpdatePlayer(t *testing.T) {
 }
 
 func TestUpdatePlayer_Error(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.Default()
+	db := &sql.DB{}
 
+	router.PUT("/player", func(c *gin.Context) {
+		object.UpdatePlayer(c, db)
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPut, "/player", bytes.NewBuffer([]byte("invalid json")))
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestDeletePlayer(t *testing.T) {
@@ -220,5 +247,25 @@ func TestDeletePlayer(t *testing.T) {
 }
 
 func TestDeletePlayer_Error(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
 
+	mock.ExpectExec("DELETE FROM players WHERE id = ?").
+		WithArgs(999).
+		WillReturnError(sql.ErrNoRows)
+
+	req, _ := http.NewRequest(http.MethodDelete, "/players/999", nil)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = req
+	c.Params = gin.Params{gin.Param{Key: "id", Value: "999"}}
+
+	object.DeletePlayer(c, db)
+
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.NoError(t, mock.ExpectationsWereMet())
 }

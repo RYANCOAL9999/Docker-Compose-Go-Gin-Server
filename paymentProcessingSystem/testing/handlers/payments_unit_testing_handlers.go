@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	object "github.com/RYANCOAL9999/SpinnrTechnologyInterview/paymentProcessingSystem/handlers"
+	"github.com/RYANCOAL9999/SpinnrTechnologyInterview/paymentProcessingSystem/models"
 	object_models "github.com/RYANCOAL9999/SpinnrTechnologyInterview/paymentProcessingSystem/models"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -58,6 +60,23 @@ func TestShowPayment(t *testing.T) {
 }
 
 func TestShowPayment_Error(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.Default()
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	paymentID := 1
+	payment := object_models.Payment{ID: paymentID, Amount: 100.0}
+	mock.ExpectQuery("SELECT (.+) FROM payments WHERE id = ?").
+		WithArgs(paymentID).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "amount"}).AddRow(payment.ID, payment.Amount))
+
+	router.GET("/payments/:id", func(c *gin.Context) {
+		object.ShowPayment(c, db)
+	})
 
 }
 
@@ -106,5 +125,71 @@ func TestCreatePayment(t *testing.T) {
 }
 
 func TestCreatePayment_Error(t *testing.T) {
+
+	gin.SetMode(gin.TestMode)
+
+	t.Run("Invalid JSON payload", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+
+		invalidJSON := []byte(`{"method": "CreditCardPayment", "amount": "invalid"}`)
+		c.Request, _ = http.NewRequest("POST", "/payments", bytes.NewBuffer(invalidJSON))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		db, _, _ := sqlmock.New()
+		defer db.Close()
+
+		object.CreatePayment(c, db)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Contains(t, w.Body.String(), "json: cannot unmarshal string into Go struct field")
+	})
+
+	t.Run("Unsupported payment method", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+
+		payment := models.Payment{Method: "UnsupportedMethod", Amount: 100.00}
+		payloadBytes, _ := json.Marshal(payment)
+		c.Request, _ = http.NewRequest("POST", "/payments", bytes.NewBuffer(payloadBytes))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		db, mock, _ := sqlmock.New()
+		defer db.Close()
+
+		mock.ExpectExec("INSERT INTO Payment").
+			WithArgs(payment.Method, payment.Amount, sqlmock.AnyArg()).
+			WillReturnResult(sqlmock.NewResult(1, 1))
+
+		object.CreatePayment(c, db)
+
+		assert.Equal(t, http.StatusCreated, w.Code)
+		var result models.PaymentResult
+		json.Unmarshal(w.Body.Bytes(), &result)
+		assert.Equal(t, 1, result.ID)
+		assert.Empty(t, result.Status) // Status should be empty for unsupported method
+	})
+
+	t.Run("Database error", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+
+		payment := models.Payment{Method: "CreditCardPayment", Amount: 100.00}
+		payloadBytes, _ := json.Marshal(payment)
+		c.Request, _ = http.NewRequest("POST", "/payments", bytes.NewBuffer(payloadBytes))
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		db, mock, _ := sqlmock.New()
+		defer db.Close()
+
+		mock.ExpectExec("INSERT INTO Payment").
+			WithArgs(payment.Method, payment.Amount, sqlmock.AnyArg()).
+			WillReturnError(sql.ErrConnDone)
+
+		object.CreatePayment(c, db)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Contains(t, w.Body.String(), "error querying database with AddPayment")
+	})
 
 }

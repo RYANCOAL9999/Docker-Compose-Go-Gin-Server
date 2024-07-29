@@ -30,20 +30,39 @@ func TestJoinChallenges(t *testing.T) {
 		object.JoinChallenges(c, db)
 	})
 
-	mock.ExpectQuery("SELECT CreatedAt FROM Challenge").WillReturnRows(sqlmock.NewRows([]string{"CreatedAt"}).AddRow(time.Now().Add(-2 * time.Minute)))
-	mock.ExpectBegin()
-	mock.ExpectExec("INSERT INTO Challenge").WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectExec("UPDATE PrizePool").WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectCommit()
-	mock.ExpectQuery("SELECT Status, Probability FROM Challenge").WillReturnRows(sqlmock.NewRows([]string{"Status", "Probability"}).AddRow(object_models.Joined, 0.5))
+	// Mock expectations
+	mock.ExpectQuery(`SELECT CreatedAt FROM Challenge WHERE PlayerID = \?`).
+		WithArgs(1001). // Assuming PlayerID is the argument
+		WillReturnRows(sqlmock.NewRows([]string{"CreatedAt"}).
+			AddRow(time.Now().Add(-2 * time.Minute)))
 
+	mock.ExpectBegin()
+
+	mock.ExpectExec(`INSERT INTO Challenge \(PlayerID, Amount, Status, Won, CreatedAt, Probability\)`).
+		WithArgs(1001, 20.01, object_models.Ready, 0, sqlmock.AnyArg(), 0.5).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	mock.ExpectExec(`UPDATE PrizePool SET Amount = \? WHERE ID = \?`).
+		WithArgs(20.01, 1).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	mock.ExpectCommit()
+
+	mock.ExpectQuery(`SELECT Status, Probability FROM Challenge WHERE ID = \?`).
+		WithArgs(1). // Assuming Challenge ID is 1
+		WillReturnRows(sqlmock.NewRows([]string{"Status", "Probability"}).
+			AddRow(object_models.Joined, 0.5))
+
+	// Create the request
 	newChallenge := object_models.NewChallengeNeed{PlayerID: 1001, Amount: 20.01}
 	jsonValue, _ := json.Marshal(newChallenge)
-
 	req, _ := http.NewRequest("POST", "/challenges", bytes.NewBuffer(jsonValue))
 	w := httptest.NewRecorder()
+
+	// Serve the request
 	r.ServeHTTP(w, req)
 
+	// Assert the response
 	assert.Equal(t, http.StatusCreated, w.Code)
 
 	var response object_models.JoinChallengeResponse
@@ -51,22 +70,26 @@ func TestJoinChallenges(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, object_models.Joined, response.Status)
 
+	// Ensure all expectations were met
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
 func TestJoinChallenges_Error(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
+
 	db, _, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 	defer db.Close()
 
-	router.POST("/join", func(c *gin.Context) {
+	// Register the route with the correct path
+	router.POST("/challenges", func(c *gin.Context) {
 		object.JoinChallenges(c, db)
 	})
 
+	// Invalid JSON data
 	invalidJSON := `{"PlayerID": "player123", "Amount": "invalid_amount"}`
 
 	req, _ := http.NewRequest(http.MethodPost, "/challenges", bytes.NewBufferString(invalidJSON))
@@ -75,6 +98,7 @@ func TestJoinChallenges_Error(t *testing.T) {
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
+	// Assert that the response status code is 400 Bad Request
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
@@ -91,22 +115,29 @@ func TestShowChallenges(t *testing.T) {
 		object.ShowChallenges(c, db)
 	})
 
+	// Mocking the SQL query and response
 	rows := sqlmock.NewRows([]string{"ID", "PlayerID", "Amount", "Status", "Won", "CreatedAt", "Probability"}).
-		AddRow(1, 1001, 100.01, object_models.Joined, false, time.Now(), 0.5)
+		AddRow(1, 1001, 100.01, object_models.Joined, false, time.Now().Format(time.RFC3339), 0.5)
 
-	mock.ExpectQuery("SELECT (.+) FROM Challenge").WillReturnRows(rows)
+	mock.ExpectQuery("SELECT (.+) FROM Challenge LIMIT ?").WithArgs(1).WillReturnRows(rows)
 
+	// Making the HTTP request
 	req, _ := http.NewRequest("GET", "/challenges/results?limit=1", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
+	// Checking the response status code
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var response object_models.Challenge
+	// Unmarshalling the response into a slice of Challenge
+	var response []object_models.Challenge
 	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
-	assert.Equal(t, int(1), response.ID)
-	assert.Equal(t, 1001, response.PlayerID)
+
+	// Verifying the contents of the response
+	assert.Equal(t, 1, len(response))
+	assert.Equal(t, 1, response[0].ID)
+	assert.Equal(t, 1001, response[0].PlayerID)
 
 	assert.NoError(t, mock.ExpectationsWereMet())
 }

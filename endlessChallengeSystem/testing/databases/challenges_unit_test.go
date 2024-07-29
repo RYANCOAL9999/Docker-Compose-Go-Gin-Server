@@ -40,14 +40,17 @@ func TestListChallenges(t *testing.T) {
 }
 
 func TestListChallenges_Error(t *testing.T) {
+	// Setup
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("Error creating mock database: %v", err)
 	}
 	defer db.Close()
 
+	// Test cases
 	t.Run("Database query error", func(t *testing.T) {
-		mock.ExpectQuery("SELECT (.+) FROM Challenge").WillReturnError(sql.ErrConnDone)
+		mock.ExpectQuery("SELECT (.+) FROM Challenge").
+			WillReturnError(sql.ErrConnDone)
 
 		challenges, err := object.ListChallenges(db, 0)
 		assert.Error(t, err)
@@ -56,10 +59,12 @@ func TestListChallenges_Error(t *testing.T) {
 	})
 
 	t.Run("Row scan error", func(t *testing.T) {
+		// Simulate a row with invalid data
 		rows := sqlmock.NewRows([]string{"ID", "PlayerID", "Amount", "Status", "Won", "CreatedAt", "Probability"}).
 			AddRow("invalid", "1001", 20.01, "Joined", false, "invalid_time", 0.5)
 
-		mock.ExpectQuery("SELECT (.+) FROM Challenge").WillReturnRows(rows)
+		mock.ExpectQuery("SELECT (.+) FROM Challenge").
+			WillReturnRows(rows)
 
 		challenges, err := object.ListChallenges(db, 0)
 		assert.Error(t, err)
@@ -78,7 +83,10 @@ func TestListChallenges_Error(t *testing.T) {
 		assert.Contains(t, err.Error(), "error querying database with ListChallenges")
 	})
 
-	assert.NoError(t, mock.ExpectationsWereMet())
+	// Ensure all expectations were met
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("There were unfulfilled expectations: %s", err)
+	}
 }
 
 func TestGetLastChallenge(t *testing.T) {

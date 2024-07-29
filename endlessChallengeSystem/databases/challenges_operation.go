@@ -128,7 +128,7 @@ func DistributePrizePool(tx *sql.Tx, challengeID int, playerID int, status model
 
 	// Update last challenges's won
 	_, err = tx.Exec(`
-		UPDATE challenges 
+		UPDATE Challenge 
 		SET Won = 1, Probability = 0, Status = ? 
 		WHERE ID = ? AND PlayerID = ?
 	`, int(status),

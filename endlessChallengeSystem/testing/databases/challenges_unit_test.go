@@ -356,19 +356,45 @@ func TestUpdateProbability(t *testing.T) {
 
 func TestUpdateProbability_Error(t *testing.T) {
 	// Setup
-	tx := &sql.Tx{}
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when beginning a transaction", err)
+	}
 	challengeID := 999
 	playerID := 888
 	probability := 0.5
 	status := object_models.Ready
+
+	// Mock Exec to return an error
+	mock.ExpectExec("UPDATE Challenge").
+		WithArgs(probability, status, challengeID, playerID).
+		WillReturnError(errors.New("SQL execution error"))
 
 	// Assertion
 	var logOutput bytes.Buffer
 	log.SetOutput(&logOutput)
 
 	// Call the function
-	err := object.UpdateProbability(tx, challengeID, playerID, probability, status)
+	err = object.UpdateProbability(tx, challengeID, playerID, probability, status)
 	if err == nil {
-		t.Errorf("Expected an error for non-existing IDs, but got nil")
+		t.Errorf("Expected an error due to SQL execution failure, but got nil")
+	} else if err.Error() != "error updating probability: SQL execution error" {
+		t.Errorf("Expected error message 'error updating probability: SQL execution error', but got '%s'", err)
+	}
+
+	// Ensure expectations were met
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+
+	// Rollback the transaction in the test
+	if err := tx.Rollback(); err != nil {
+		t.Errorf("Failed to rollback transaction: %v", err)
 	}
 }

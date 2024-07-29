@@ -166,6 +166,7 @@ func UpdateProbability(tx *sql.Tx, challengeID int, playerID int, probability fl
 		challengeID,
 		playerID)
 	if err != nil {
+		tx.Rollback()
 		return fmt.Errorf("error updating player's balance: %w", err)
 	}
 

@@ -65,7 +65,7 @@ func GetPlayer(db *sql.DB, id int) (*models.PlayerRank, error) {
 		L.LV as LV
 		FROM Player P
 		INNER JOIN 
-		Levels L 
+		Level L 
 		ON P.LevelID = L.ID
 		WHERE P.ID = ?
 	`, id).Scan(

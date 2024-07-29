@@ -36,10 +36,11 @@ func CalculateChallengeResult(db *sql.DB, challengeID int, playerID int, probabi
 	defer func() {
 		if p := recover(); p != nil {
 			tx.Rollback()
-			log.Printf("Recovered from panic with CalculateChallengeResult: %v", p)
-			panic(p) // Re-throw panic after rollback
+			log.Printf("Recovered rollback with CalculateChallengeResult: %v", p)
+			// panic(p) // Re-throw panic after rollback
 		} else if err != nil {
 			tx.Rollback() // Rollback on error
+			log.Printf("Recovered error with CalculateChallengeResult: %v", p)
 		} else {
 			err = tx.Commit() // Commit on success
 			if err != nil {
@@ -112,11 +113,12 @@ func JoinChallenges(c *gin.Context, db *sql.DB) {
 	defer func() {
 		if p := recover(); p != nil {
 			tx.Rollback()
-			log.Printf("Recovered from panic with JoinChallenges: %v", p)
+			log.Printf("Recovered rollback with JoinChallenges: %v", p)
 			c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Internal server error"})
-			panic(p) // Re-throw panic after rollback
+			// panic(p) // Re-throw panic after rollback
 		} else if err != nil {
 			tx.Rollback() // Rollback on error
+			log.Printf("Recovered error with JoinChallenges: %v", p)
 			c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to join challenge"})
 		} else {
 			err = tx.Commit() // Commit on success

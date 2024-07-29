@@ -25,7 +25,7 @@ func CalculateChallengeResult(db *sql.DB, challengeID int, playerID int, probabi
 
 	won := rand.Float64() < winProbability
 
-	var joined models.Status = models.Joined
+	const joined models.Status = models.Joined
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -36,13 +36,14 @@ func CalculateChallengeResult(db *sql.DB, challengeID int, playerID int, probabi
 	defer func() {
 		if p := recover(); p != nil {
 			tx.Rollback()
+			log.Printf("Recovered from panic with CalculateChallengeResult: %v", p)
 			panic(p) // Re-throw panic after rollback
 		} else if err != nil {
 			tx.Rollback() // Rollback on error
 		} else {
 			err = tx.Commit() // Commit on success
 			if err != nil {
-				log.Printf("Failed to commit transaction: %v", err)
+				log.Printf("Failed to commit transaction wth CalculateChallengeResult: %v", err)
 			}
 		}
 	}()
@@ -55,11 +56,6 @@ func CalculateChallengeResult(db *sql.DB, challengeID int, playerID int, probabi
 
 	if err != nil {
 		log.Printf("Failed to distribute prize pool: %v", err)
-		return
-	}
-
-	if err := tx.Commit(); err != nil {
-		log.Printf("Failed to commit transaction: %v", err)
 		return
 	}
 
@@ -116,13 +112,17 @@ func JoinChallenges(c *gin.Context, db *sql.DB) {
 	defer func() {
 		if p := recover(); p != nil {
 			tx.Rollback()
+			log.Printf("Recovered from panic with JoinChallenges: %v", p)
+			c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Internal server error"})
 			panic(p) // Re-throw panic after rollback
 		} else if err != nil {
 			tx.Rollback() // Rollback on error
+			c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to join challenge"})
 		} else {
 			err = tx.Commit() // Commit on success
 			if err != nil {
-				log.Printf("Failed to commit transaction: %v", err)
+				log.Printf("Failed to commit transaction with JoinChallenges: %v", err)
+				c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to commit transaction"})
 			}
 		}
 	}()
@@ -137,11 +137,6 @@ func JoinChallenges(c *gin.Context, db *sql.DB) {
 	err = databases.UpdatePricePool(tx, newChallengeNeed.Amount)
 	if err != nil {
 		c.JSON(http.StatusTooEarly, models.ErrorResponse{Error: "Failed to update price pool"})
-		return
-	}
-
-	if err := tx.Commit(); err != nil {
-		c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "Failed to commit transaction"})
 		return
 	}
 

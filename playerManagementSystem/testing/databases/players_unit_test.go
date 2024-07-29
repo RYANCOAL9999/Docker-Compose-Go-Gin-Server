@@ -170,7 +170,7 @@ func TestGetPlayer_Error(t *testing.T) {
 	}
 	defer db.Close()
 
-	mock.ExpectQuery("SELECT P.ID as ID, P.Name as Name, L.LV as LV FROM Player P INNER JOIN Levels L ON P.LevelID = L.ID WHERE P.ID = ?").
+	mock.ExpectQuery("SELECT P.ID as ID, P.Name as Name, L.LV as LV FROM Player P INNER JOIN Level L ON P.LevelID = L.ID WHERE P.ID = ?").
 		WithArgs(1).
 		WillReturnError(sql.ErrNoRows)
 
